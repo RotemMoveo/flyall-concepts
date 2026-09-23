@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>FlyAll — קונספטים</title>
 <style>
-  :root { --w: 420px; --bg: #0e0f13; --ink: #f4f4f6; --muted: #8b8d98; --chip: #1c1e25; --accent: #ffffff; }
+  :root { --w: 427px; --h: 878px; --bg: #0e0f13; --ink: #f4f4f6; --muted: #8b8d98; --chip: #1c1e25; --accent: #ffffff; }
   * { box-sizing: border-box; margin: 0; }
   html, body { height: 100%; background: var(--bg); color: var(--ink);
     font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }
@@ -18,21 +18,23 @@
   nav a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 600;
     padding: 7px 14px; border-radius: 999px; transition: background .2s, color .2s; white-space: nowrap; }
   nav a[aria-current="page"] { background: var(--accent); color: #111; }
-  .stage { flex: 1; min-height: 0; width: 100%; display: flex; justify-content: center; padding-bottom: 16px; }
-  iframe { width: var(--w); max-width: 100%; height: 100%; border: 0; border-radius: 28px; background: #fff;
+  .stage { flex: 1; min-height: 0; width: 100%; position: relative; margin-bottom: 16px; }
+  /* Fixed 427×878 device viewport, scaled as a whole to fit the window (like DevTools "Fit to window") */
+  iframe { position: absolute; top: 0; left: 50%; width: var(--w); height: var(--h); border: 0; border-radius: 28px;
+    background: #fff; transform-origin: top center; transform: translateX(-50%) scale(var(--s, 1));
     box-shadow: 0 0 0 1px #2a2c35, 0 30px 80px rgba(0,0,0,.55); }
   /* On a real phone: full-bleed, compact bar */
   @media (max-width: 480px) {
     header { padding: 8px 12px; }
     .brand small { display: none; }
-    .stage { padding-bottom: 0; }
-    iframe { border-radius: 0; box-shadow: none; }
+    .stage { margin-bottom: 0; }
+    iframe { position: static; width: 100%; height: 100%; transform: none; border-radius: 0; box-shadow: none; }
   }
 </style>
 </head>
 <body>
 <header>
-  <div class="brand">FlyAll<small>תצוגת מובייל · 420px</small></div>
+  <div class="brand">FlyAll<small>תצוגת מובייל · 427 × 878</small></div>
   <nav>
     <a href="#1">קונספט 1</a>
     <a href="#2">קונספט 2</a>
@@ -52,6 +54,15 @@
     view.title = 'קונספט ' + n;
     document.title = 'FlyAll — קונספט ' + n;
   }
+  const stage = document.querySelector('.stage'), header = document.querySelector('header');
+  function fit() {
+    const s = Math.min(stage.clientHeight / 878, stage.clientWidth / 427);
+    document.documentElement.style.setProperty('--s', s);
+    header.style.maxWidth = innerWidth > 480 ? Math.round(427 * s) + 'px' : '';
+  }
+  new ResizeObserver(fit).observe(stage);
+  addEventListener('resize', fit);
+  fit();
   addEventListener('hashchange', show);
   show();
 </script>
