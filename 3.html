@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+<script>if(window.top===window.self){location.replace("./#3")}</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlyAll — קונספט 3</title>
+<style>
+@font-face{font-family:'Almoni';src:url('assets/fonts/almoni-dl-aaa-300.ttf') format('truetype');font-weight:300;font-display:swap}
+@font-face{font-family:'Almoni';src:url('assets/fonts/almoni-dl-aaa-400.ttf') format('truetype');font-weight:400;font-display:swap}
+@font-face{font-family:'Almoni';src:url('assets/fonts/almoni-dl-aaa-700.ttf') format('truetype');font-weight:700;font-display:swap}
+@font-face{font-family:'Almoni';src:url('assets/fonts/almoni-dl-aaa-900.ttf') format('truetype');font-weight:900;font-display:swap}
+@font-face{font-family:'Bamberger';src:url('assets/fonts/bamberger-sharp-light-fm.otf') format('opentype');font-weight:300;font-display:swap}
+@font-face{font-family:'Bamberger';src:url('assets/fonts/bamberger-sharp-regular-fm.otf') format('opentype');font-weight:400;font-display:swap}
+@font-face{font-family:'Bamberger';src:url('assets/fonts/bamberger-sharp-medium-fm.otf') format('opentype');font-weight:500;font-display:swap}
+@font-face{font-family:'Bamberger';src:url('assets/fonts/bamberger-sharp-bold-fm.otf') format('opentype');font-weight:700;font-display:swap}
+@font-face{font-family:'Bamberger';src:url('assets/fonts/bamberger-sharp-ultrabold-fm.otf') format('opentype');font-weight:800;font-display:swap}
+@font-face{font-family:'Bamberger';src:url('assets/fonts/bamberger-sharp-black-fm.otf') format('opentype');font-weight:900;font-display:swap}
+
+  :root{
+    /* ——— tunables ——— */
+    --top: 0px;              /* איפה הכרטיסייה הראשונה נתקעת */
+    --radius: 44px;          /* עיגול הפינות של החלון */
+    --stack-offset: 14px;    /* ירידה מצטברת — שפות של ערימת כרטיסים */
+    --hold: 22svh;           /* כמה "החזקה" נוספת לכל כרטיסייה */
+    --sink: 26px;            /* כמה הכרטיסייה היוצאת "שוקעת" אחורה */
+    --dim: .14;              /* הכהיה של היוצאת — נמוך, אחרת הניאון נהיה עכור */
+    --grain: .07;            /* גרעין דפוס. 0 = צבע שטוח לגמרי */
+    --lift: 0 -5px 16px rgba(0,0,0,.15);   /* הצל שמפריד בין חלון לחלון. none = שטוח */
+    --video-lift: .25;       /* הסטה מעלה בפתיחה (חלק מגובה הכרטיסייה) — ממרכזת את הכרטיס ברצועה הגלויה */
+    --video-zoom: .22;       /* כמה הסרטון מתקרב לאורך הגלילה הפותחת */
+    --card-h: 100svh;        /* full bleed — החלון תופס את כל המסך */
+
+    /* ——— palette ——— */
+    --blue:    #1B5ECE;
+    --purple:  #824AEA;
+    --magenta: #F63DE4;
+    --lime:    #D2FF30;      /* אקצנט ה-UI בכרטיסיות, מתוך הפיגמה */
+
+    /* מחזור הצבעים של המותג, פרוש פעמיים לרוחב התיבה. שתי החזרות הן מה
+       שמאפשר ללולאה להיסגר בלי קפיצה — ראה .is-flow */
+    --cycle: #1B5ECE 0%, #824AEA 16.667%, #F63DE4 33.333%,
+             #1B5ECE 50%, #824AEA 66.667%, #F63DE4 83.333%, #1B5ECE 100%;
+    --white:   #FFFFFF;
+  }
+
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    background: var(--white);
+    transition: background-color .5s cubic-bezier(.4,0,.2,1);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* גרעין דפוס עדין — תחושת פוסטר מודפס */
+  body::after{
+    content:""; position: fixed; inset:0;
+    pointer-events:none; z-index: 999;
+    opacity: var(--grain); mix-blend-mode: soft-light;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ——— זונה: קבוצת כרטיסיות שנערמות מעל רקע אחד ——— */
+  /* חשוב: הזונה היא ה-containing block של ה-sticky, לכן הכרטיסיות אחיות ישירות */
+  .zone{ position: relative; }
+
+  /* אוויר בין הזונות — כאן הרקע נחשף במלואו ומתחלף */
+  .breath{ height: 62svh; }
+  .breath.tall{ height: 100svh; }
+  /* פריים הפתיחה: הרצועה הלבנה, והחלון הראשון כבר מציץ מתחתיה */
+  .breath.opening{
+    height: 72svh;
+    display: flex;
+    align-items: center;
+    /* מתחת לבר + מרווח שמפנה את הדרך ל-SOL שתלוי ממנו */
+    padding-top: calc(var(--fa-bar-h) + 40px);
+  }
+
+  /* ——— הירו: על הקרקע הלבנה, מעל החלון הראשון ——— */
+  .hero{
+    margin: 0;
+    width: 100%;
+    direction: rtl;
+    text-align: center;
+    color: #000;
+    font-family: 'Almoni', system-ui, sans-serif;
+    padding: 0 clamp(20px, 5vw, 64px);
+  }
+  .hero__title{
+    margin: 0;
+    /* משפט זורם: הגודל נגזר מכמה שורות הוא נשבר אליהן ביחס לרצועה,
+       ולא מרוחב מילה בודדת. */
+    font-size: clamp(44px, 16vw, 116px);
+    line-height: .92;
+    letter-spacing: 0;
+    font-weight: 300;
+  }
+  /* רק שם המותג יוצא מהמשקל הדק — בולד ובגרדיאנט של FlyAll.
+     nowrap כי background-clip:text על מילה שנשברת בין שורות מפצל
+     את הגרדיאנט לשני קטעים נפרדים. */
+  .hero__mark{
+    font-weight: 900;
+    white-space: nowrap;
+    background-image: linear-gradient(90deg, #1B5ECE, #824AEA 50%, #F63DE4);
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent;
+  }
+
+  .hero__sub{
+    margin: clamp(12px, 1.8svh, 20px) 0 0;
+    font-size: clamp(18px, 4vw, 27px);
+    font-weight: 400;
+    line-height: 1.35;
+  }
+
+  /* ——— המנגנון ——— */
+  .card{
+    position: sticky;
+    top: calc(var(--top) + (var(--i) * var(--stack-offset)));
+    height: var(--card-h);
+    margin: 0 0 var(--hold);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transform-origin: 50% 0%;
+    box-shadow: var(--lift);
+    /* --p מוזרק ב-JS: 0 = חשופה, 1 = מכוסה לגמרי ע"י הבאה */
+    --p: 0;
+    /* בלי scale — כל כיווץ היה חושף שוליים בצדדים. רק שקיעה קלה כלפי מעלה */
+    transform: translate3d(0, calc(var(--sink) * var(--p) * -1), 0);
+    will-change: transform;
+  }
+  .zone > .card:last-child{ margin-bottom: 0; }
+  .zone > .card.c-perks:last-child{ margin-bottom: 24svh; }
+
+  /* הכהיה של כרטיסייה שנכנסת מתחת לבאה אחריה */
+  .card::before{
+    content:""; position:absolute; inset:0; z-index:2;   /* מעל הווידאו */
+    background:#000; opacity: calc(var(--dim) * var(--p)); pointer-events:none;
+  }
+
+  /* ——— וידאו בתוך החלון ———
+     התיבה בדיוק בגודל הכרטיסייה, ולכן הקרופ של cover זהה לכל מקרה אחר —
+     בלי חיתוך נוסף בצדדים במסך צר.
+     --z (0..1) מוזרק ב-JS לאורך הגלילה הפותחת ועושה שני דברים:
+     1. פאן: בפריים הפתיחה רואים רק את חצי הכרטיסייה העליון, אז הסרטון מוסט
+        מעלה ו/כרטיס הטיסה נוחת במרכז הרצועה הגלויה במקום להיחתך בקיפול.
+        ככל שהכרטיסייה משתלטת על המסך ההסטה מתאפסת והכרטיס חוזר למרכז.
+        ההסטה מחושבת ב-JS ונחסמת מול מיקום הכרטיסייה באותו פריים, כך שהיא
+        לא יכולה לחשוף רצועה ריקה בתחתית גם אם הגלילה מהירה.
+     2. זום אין. הראש של ה-scale הוא מרכז התיבה — כלומר הכרטיס עצמו — אז הוא
+        נשאר מעוגן והפריים גדל סביבו. גלילה אחורה מהפכת את שניהם. */
+  .card > video{
+    position:absolute; left:0; top:0; z-index:1;
+    width:100%; height:100%;
+    --z: 0;
+    --pan: 0px;
+    transform: translateY(var(--pan))
+               scale(calc(1 + (var(--video-zoom) * var(--z))));
+    will-change: transform;
+    object-fit: cover;
+    object-position: center center;
+    display:block; pointer-events:none;
+  }
+
+  /* ——— צבעים ——— */
+  .c-blue{ background: var(--blue); }
+  .c-purple{ background: var(--purple); }
+  .c-magenta{ background: var(--magenta); }
+
+  /* ——— כרטיסיות הקטגוריה ———
+     כל אחת שורטטה כפוסטר 390x844. במקום לפרק ולהרכיב מחדש את הקומפוזיציה,
+     הארטבורד נשמר כמו שהוא — כל המספרים כאן הם המספרים מהפיגמה — והוא
+     מוקטן כיחידה אחת כדי להיכנס למסך. ברוחב טלפון זה יוצא כמעט 1:1,
+     ובדסקטופ זה פוסטר ממורכז על הרקע של הכרטיסייה. */
+  .poster-wrap{
+    position: relative; z-index: 1;
+    height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    padding-top: var(--fa-bar-h);   /* הפוסטר לא נכנס מתחת לבר */
+  }
+  .poster{
+    position: relative;
+    flex: 0 0 auto;
+    width: 390px; height: 844px;
+    direction: rtl;
+    /* --ps מחושב ב-JS: CSS לא יודע לחלק אורך באורך ולקבל מספר */
+    transform: scale(var(--ps, .8));
+    transform-origin: 50% 50%;
+  }
+  .poster > *{ position: absolute; margin: 0; }
+  .poster img{ position: absolute; display: block; max-width: none; }
+  .tz-pill img{ position: static; }
+
+  .po-city, .po-year{
+    top: 26px;
+    font: 900 15px/1 'Almoni', system-ui, sans-serif;
+    letter-spacing: .9px; color: #fff; direction: ltr;
+  }
+  .po-city{ left: 22px; }
+  .po-year{ right: 21.61px; }
+  .po-teaser .po-city, .po-teaser .po-year{ color: #000; }   /* על הכרטיסייה הלבנה */
+
+  /* ——— ה-CTA של הקטגוריה ———
+     לא מופיע בשרטוט. בנוי בשפה של הפיל שכן מופיע בו — לבן, מסגרת שחורה
+     3px וצל קשיח — כדי שייקרא כחלק מהמערכת ולא כאלמנט זר. */
+  .po-cta{
+    left: 22px; right: 22px; top: 762px;   /* לרוחב מלא, על אותו קו שוליים */
+    height: 52px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    background: #fff; border: 2px solid #000; border-radius: 999px;
+    font: 900 18px/1 'Almoni', system-ui, sans-serif;
+    letter-spacing: 1.02px; color: #000;
+    white-space: nowrap; cursor: pointer;
+  }
+  .po-cta svg{ width: 16px; height: 16px; fill: none; stroke: #000; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+  @media (prefers-reduced-motion: no-preference){
+    .po-cta{ transition: opacity .18s ease; }
+    .po-cta:active{ opacity: .72; }
+  }
+  .po-pill{
+    height: 38px; padding: 0 20px;
+    display: flex; align-items: center;
+    background: #fff; border: 3px solid #000; border-radius: 999px;
+    box-shadow: 5px 5px 0 #000;
+    font: 900 17px/1 'Almoni', system-ui, sans-serif;
+    letter-spacing: 1.02px; color: #000; white-space: nowrap;
+  }
+
+  /* ——— כרטיסיית הטיזר ———
+     כרטיסייה אחת שהתוכן שלה מתחלף. הפריסה זהה בכל המצבים — משתנים רק
+     התמונה וטקסט הפיל — ולכן כל המצבים מונחים זה על זה ומתחלפים
+     בהצלבת שקיפות במקום להיבנות מחדש. */
+  .po-teaser .arch{
+    left: 22px; top: 110px; width: 346px; height: 386px;
+    border-radius: 173px 173px 14px 14px;
+    background-image: linear-gradient(133.46deg, var(--cycle));
+    --flow-dur: 3.2s;
+  }
+
+  /* כל דמות והמסגרת שלה, לפי הקואורדינטות בשרטוט */
+  .tz{ opacity: 0; transition: opacity .75s cubic-bezier(.4,0,.2,1), transform .9s cubic-bezier(.4,0,.2,1); transform: scale(1.035); overflow: hidden; }
+  .tz.is-on{ opacity: 1; transform: none; }
+  .tz img{ position: absolute; display: block; max-width: none; }
+
+  .tz--shows{ left: 22px;  top: 47px;   width: 346px; height: 449px; border-radius: 14px; }
+  .tz--shows img{ left: -46.82%; top: -10.04%; width: 182.37%; height: 168.64%; }
+  .tz--sport{ left: 51px;  top: 72px;   width: 338px; height: 424px; }
+  .tz--sport img{ left: 0; top: .04%; width: 100%; height: 134.4%; }
+  .tz--fest{  left: -46px; top: -146px; width: 436px; height: 642px; }
+  .tz--fest img{ left: -.02%; top: 0; width: 100.04%; height: 121.6%; }
+
+  /* הפיל: נשאר במקומו ומשנה רוחב וטקסט */
+  .tz-pill{
+    left: 50%; top: 478px; transform: translateX(-50%);
+    width: var(--pw, 219px); height: 38px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding: 0 9px;
+    background: #fff; border: 3px solid #000; border-radius: 999px;
+    box-shadow: 5px 5px 0 #000;
+    transition: width .55s cubic-bezier(.4,0,.2,1);
+  }
+  .tz-pill b{
+    flex: 1 1 auto;
+    text-align: center;
+    font: 900 17px/1 'Almoni', system-ui, sans-serif;
+    letter-spacing: 1.02px; color: #000; white-space: nowrap;
+    transition: opacity .3s ease;
+  }
+  .tz-pill.is-swap b{ opacity: 0; }
+  .po-teaser .po-city{ transition: opacity .3s ease; }
+  .po-teaser.is-swap .po-city{ opacity: 0; }
+  .tz-pill button{
+    flex: 0 0 auto; width: 13px; height: 13px;
+    padding: 0; border: 0; background: none; cursor: pointer;
+  }
+  .tz-pill img{ width: 100%; height: 100%; display: block; }
+  .tz-pill .is-prev img{ transform: rotate(90deg); }
+  .tz-pill .is-next img{ transform: rotate(-90deg); }
+
+  /* הכותרת — ממורכזת בשרטוט הזה, בשונה מהפוסטרים הקודמים */
+  /* גוש הכותרת ממורכז בדיוק בין תחתית הפיל (478+38=516) לראש ה-CTA (762):
+     מרכז הרווח 639, גובה הגוש 115.66, ולכן הוא מתחיל ב-581.2. */
+  .po-teaser .h1{
+    left: 0; right: 0; top: 607.7px; transform: translateY(-50%);
+    text-align: center;
+    font: 700 62px/53.32px 'Bamberger', sans-serif; color: var(--magenta);
+    letter-spacing: 0; white-space: nowrap;
+  }
+  .po-teaser .h2box{
+    left: 50%; top: 634.7px; transform: translateX(-50%);
+    width: 228px; height: 62px; background: var(--purple);
+  }
+  .po-teaser .h2{
+    position: absolute; right: 7.86px; top: 30.69px; transform: translateY(-50%);
+    font: 700 62px/53.32px 'Bamberger', sans-serif; color: #fff;
+    letter-spacing: 0; white-space: nowrap;
+  }
+
+  /* רקע הכרטיסייה — נמשך על כל הרוחב, הפוסטר יושב עליו ברצף */
+  .c-teaser{ background: #fff; }
+
+  /* ——— גרדיאנט בתנועה ———
+     התיבה כפולה מהאלמנט ומכילה שני מחזורי צבע, אז הזזה של 100% מרוחב
+     האלמנט שווה בדיוק למחזור אחד — הפריים האחרון זהה לראשון והלולאה
+     נסגרת בלי קפיצה. */
+  @keyframes flow{ from{ background-position: 0% 50%; } to{ background-position: 100% 50%; } }
+  .po-teaser .arch{
+    background-size: 200% 200%;
+    animation: flow var(--flow-dur, 3s) linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .po-teaser .arch{ animation: none; }
+    .tz{ transition-duration: .01ms; }
+  }
+
+
+
+  /* ——— כרטיסיית ההטבות ———
+     המבנה מהפיגמה: שני עיגולי גרדיאנט עם דמות מגוזרת, ומתחת לכל אחד
+     פיל לבן. הטקסטים נלקחו מסקשן ההטבות של הקונספט הראשון. */
+  .c-perks{ background: #fff; }
+  .po-perks{ --blob: 190px; }   /* קוטר העיגול — הפיל והכיתוב נגזרים ממנו */
+
+  /* באותו אופי של כותרת ההירו: משקל דק, גדול, והדגש ב-900.
+     הגודל בפיקסלים ולא ב-vw כי הוא חי בתוך ארטבורד 390 שמוקטן כיחידה. */
+  .pk-head{
+    left: 22px; right: 22px; top: 48px;
+    margin: 0; text-align: center;
+    font: 300 62px/1.02 'Almoni', system-ui, sans-serif;
+    letter-spacing: 0; color: #000;
+  }
+  /* שבירת השורות קבועה, כמו בקונספט הראשון — אחרת "גם הדרך" מתפצל
+     בין שתי שורות והדגש מאבד את המשמעות */
+  .pk-head span{ display: block; }
+  .pk-head b{ font-weight: 900; white-space: nowrap; }
+
+  .pk__blob{
+    left: calc((390px - var(--blob)) / 2);
+    width: var(--blob); height: var(--blob);
+    top: var(--y);
+    border-radius: 50%;
+    overflow: hidden;
+    background-image: linear-gradient(90deg, var(--cycle));
+    background-size: 200% 200%;
+    animation: flow 3.4s linear infinite;
+  }
+  /* מיקום הדמות בתוך העיגול — באחוזים, לפי השרטוט, כך שזה נשמר בכל גודל */
+  .pk__blob i{ position: absolute; display: block; overflow: hidden; }
+  .pk__blob img{ position: absolute; display: block; max-width: none; }
+  .pk--a i{ left: 6.29%; top: 10.93%; width: 87.75%; height: 78.15%; }
+  .pk--a img{ left: -41.05%; top: 0; width: 158.32%; height: 100%; }
+  .pk--b i{ left: 3.31%; top: 0; width: 116.56%; height: 87.42%; }
+  .pk--b img{ left: 0; top: 0; width: 100%; height: 100%; }
+
+  .pk__pill{
+    left: 50%; transform: translateX(-50%);
+    top: calc(var(--y) + var(--blob) - 38px);   /* התחתית מיושרת לתחתית העיגול */
+    height: 38px; min-width: 200px; padding: 0 22px;
+    display: flex; align-items: center; justify-content: center;
+    background: #fff; border: 3px solid #000; border-radius: 999px;
+    box-shadow: 5px 5px 0 #000;
+    font: 900 17px/1 'Almoni', system-ui, sans-serif;
+    letter-spacing: 1.02px; color: #000; white-space: nowrap;
+  }
+  .pk__sub{
+    left: 22px; right: 22px; top: calc(var(--y) + var(--blob) + 16px);
+    margin: 0; text-align: center;
+    font: 400 16px/1.2 'Almoni', system-ui, sans-serif; color: #5A5A5A;
+  }
+  .pk__price{
+    left: 22px; right: 22px; top: calc(var(--y) + var(--blob) + 41px);
+    margin: 0; text-align: center;
+    font: 400 15px/1.2 'Almoni', system-ui, sans-serif; color: #8A8A8A;
+  }
+  .pk__price b{ font-weight: 900; font-size: 17px; color: #000; }
+
+  @media (prefers-reduced-motion: reduce){ .pk__blob{ animation: none; } }
+
+  /* ——— קטגוריות על רקע כהה ———
+     לא כרטיסייה שנגללת מעל: הערימה מתרוממת והרקע הכהה נחשף מתחתיה,
+     ונשאר שחור עד סוף העמוד. */
+  .cats{
+    position: relative; z-index: 1;
+    direction: rtl; text-align: center;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: clamp(16px, 3svh, 34px) clamp(12px, 4vw, 36px);
+    padding: clamp(34px, 7svh, 70px) clamp(20px, 5vw, 64px) clamp(30px, 5.5svh, 58px);
+  }
+
+  .cat-item{
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+    gap: clamp(10px, 1.8svh, 18px);
+    padding: clamp(10px, 2svh, 22px) 0;
+    color: #fff; text-decoration: none;
+  }
+  .cat-item__st{
+    /* שניים בשורה — הסטיקר נקבע לפי רוחב העמודה ולא לפי רוחב המסך */
+    width: clamp(74px, 22vw, 124px); height: auto; display: block;
+    /* נכנס מסובב וקטן ומתיישב על הזווית שלו, כאילו הודבק עכשיו */
+    transform: rotate(calc(var(--rot) - 12deg)) scale(.78);
+    opacity: 0;
+    transition: transform .85s cubic-bezier(.2,.8,.2,1),
+                opacity .55s ease;
+  }
+  .cat-item__name{
+    margin: 0;
+    font: 900 clamp(24px, 6.4vw, 44px)/1 'Almoni', system-ui, sans-serif;
+    letter-spacing: 0;
+    opacity: 0; transform: translateY(18px);
+    transition: opacity .6s ease .12s, transform .7s cubic-bezier(.2,.8,.2,1) .12s;
+  }
+  .cat-item.is-in .cat-item__st{ transform: rotate(var(--rot)) scale(1); opacity: 1; }
+  .cat-item.is-in .cat-item__name{ opacity: 1; transform: none; }
+
+  @media (hover: hover){
+    .cat-item:hover .cat-item__st{ transform: rotate(var(--rot)) scale(1.06); }
+  }
+  .cat-item:active .cat-item__st{ transform: rotate(var(--rot)) scale(.97); }
+  @media (prefers-reduced-motion: reduce){
+    .cat-item__st, .cat-item__name{ opacity: 1; transform: rotate(var(--rot)); transition: none; }
+  }
+
+  /* ——— הפוטר על הרקע השחור ———
+     ספציפיות כפולה, אחרת ‎.foot שמוגדר אחריו מחזיר את הדיו הכהה */
+  .foot.foot--dark{ --ink: #fff; }
+  .foot--dark .foot__brand p,
+  .foot--dark .foot__cols a,
+  .foot--dark .foot__legal nav a{ opacity: .66; }
+  .foot--dark .foot__legal small{ opacity: .45; }
+  .foot--dark .foot__social a{ background: rgba(255,255,255,.12); }
+  .foot--dark .foot__social a:hover{ background: rgba(255,255,255,.2); }
+  .foot--dark .foot__rule{ background: rgba(255,255,255,.2); }
+  /* הסימן משורטט בכחול המותג ובגרדיאנט — שניהם נבלעים בשחור, אז הוא
+     יוצא כחיתוך לבן */
+  .foot--dark .foot__brand svg path{ fill: #fff !important; }
+
+  /* ——— פוטר ———
+     הפוטר של הקונספט הראשון, כפי שהוא: בלי משטח משלו, על הקרקע
+     הלבנה שממילא רצה מתחת לערימה. */
+  .foot{
+    padding-top: clamp(10px, 2svh, 24px);
+    --ink: #1A1140;
+    --ease: cubic-bezier(.22,.9,.24,1);
+    position: relative; z-index: 1;
+    padding: 0 0 38px;
+    color: var(--ink);
+    direction: rtl;
+    font-family: 'Almoni', system-ui, sans-serif;
+  }
+  .foot a{ text-decoration: none; }
+
+  .foot__brand{ padding: 0 22px; display: flex; align-items: center; gap: 13px; }
+  .foot__brand svg{ display: block; width: 89px; height: 26px; flex: none; }
+  .foot__brand p{ margin: 0; font-weight: 400; font-size: 13px; line-height: 1.35; opacity: .55; }
+
+  .foot__cols{
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    padding: 38px 22px 0; text-align: right;
+  }
+  .foot__cols h4{ margin: 0 0 10px; font-weight: 700; font-size: 15px; letter-spacing: 0; }
+  .foot__cols a{
+    display: block; font-weight: 400; font-size: 14px; line-height: 1.95;
+    color: var(--ink); opacity: .6; transition: opacity .2s var(--ease);
+  }
+  .foot__cols a:hover, .foot__cols a:active{ opacity: 1; }
+
+  .foot__social{ display: flex; gap: 10px; padding: 34px 22px 0; justify-content: flex-start; }
+  .foot__social a{
+    width: 42px; height: 42px; border-radius: 50%;
+    display: grid; place-items: center;
+    color: var(--ink); background: rgba(26,17,64,.07);
+    transition: background .25s var(--ease), transform .2s var(--ease);
+  }
+  .foot__social a:hover{ background: rgba(26,17,64,.13); }
+  .foot__social a:active{ transform: scale(.92); }
+  .foot__social svg{ display: block; }
+
+  .foot__rule{ height: 1px; margin: 34px 22px 0; background: rgba(26,17,64,.12); }
+  .foot__legal{ padding: 18px 22px 0; text-align: right; }
+  .foot__legal nav{ display: flex; flex-wrap: wrap; gap: 4px 16px; }
+  .foot__legal nav a{ font-weight: 400; font-size: 13px; color: var(--ink); opacity: .6; }
+  .foot__legal small{
+    display: block; margin-top: 14px; font-weight: 300; font-size: 12px;
+    line-height: 1.6; opacity: .45;
+  }
+
+  /* מד גלילה דק */
+  .rail{ position:fixed; right:0; top:0; bottom:0; width:3px; z-index:900; background:rgba(128,128,128,.18); }
+  .rail i{ position:absolute; left:0; top:0; width:100%; height:0; background:#fff; mix-blend-mode:difference; }
+
+  @media (max-width:720px){
+    :root{ --radius:30px; --stack-offset:10px; --hold:16svh; }
+  }
+  @media (prefers-reduced-motion: reduce){ .card{ transform:none; } }
+/* ============================================================
+   FLYALL — TOP NAVIGATION BAR
+   Reference: Hader.svg, authored at 390 x 123 (iPhone 13/14 logical width).
+   Every number below is traced from that file.
+   ============================================================ */
+
+:root {
+  --fa-font: 'Almoni', system-ui, sans-serif;
+  --fa-ink: #1B5ECE;                 /* single UI colour: logo, avatar, points, menu */
+  --fa-grad-a: #1B5ECE;
+  --fa-grad-b: #824AEA;              /* stop at 50.48% */
+  --fa-grad-c: #F63DE4;
+
+  --fa-bar-h: 64px;                  /* fixed: bar height does NOT scale */
+  --fa-bar-radius: 16px;
+  --fa-pad: 20px;                    /* physical side padding */
+
+  --fa-notch-w: 33.846%;             /* 132 / 390 — scales with viewport width */
+  --fa-notch-ratio: 132 / 42.9006;   /* 63.7988 -> 106.6994 */
+  --fa-notch-top: 63.8px;            /* meets the bar's bottom edge */
+
+  --fa-orb-size: 25.7576%;           /* 34 / 132 of the notch — scales with it.
+                                        To pin the orb at a fixed 34px instead,
+                                        set: --fa-orb-size: 34px */
+  --fa-orb-left: 36.29%;             /* 47.903 / 132 */
+  --fa-orb-top: 3.651%;              /* 1.5664 / 42.9006 */
+
+  /* type trims, measured against Hader.svg with Almoni */
+  --fa-points-nudge: -0.767px;
+  --fa-points-baseline: 13px;        /* box top -> baseline, at 16.3px/1 */
+  --fa-avatar-nudge: 0.13px;
+  --fa-z: 100;
+}
+
+/* ---- shell ------------------------------------------------ */
+.fa-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--fa-z);
+  height: var(--fa-bar-h);
+  direction: ltr;                    /* the bar is NOT mirrored in RTL */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ---- layer 0 : ambient glow + stars (behind the white bar) -- */
+.fa-header__decor {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+.fa-header__decor svg { display: block; width: 100%; height: auto; }
+
+/* ---- layer 1 : the white silhouette (bar + notch share one shadow) ---- */
+.fa-header__shape {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 1;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .25));
+  pointer-events: none;
+}
+.fa-header__bar {
+  height: var(--fa-bar-h);
+  background: #fff;
+  border-radius: 0 0 var(--fa-bar-radius) var(--fa-bar-radius);
+}
+.fa-header__notch {
+  position: absolute;
+  top: var(--fa-notch-top);
+  left: 50.128%;                     /* the traced shape sits 0.5px right of centre */
+  transform: translateX(-50%);
+  width: var(--fa-notch-w);
+  aspect-ratio: var(--fa-notch-ratio);
+}
+.fa-header__notch svg { display: block; width: 100%; height: 100%; }
+
+/* the orb needs its own stacking layer: translateX(-50%) on .fa-header__notch
+   makes it a stacking context, so a z-index on the child alone stays trapped inside */
+.fa-header__notch--orb { z-index: 3; pointer-events: none; }
+
+/* ---- layer 2 : controls ------------------------------------ */
+.fa-header__content {
+  position: relative;
+  z-index: 2;
+  height: var(--fa-bar-h);
+}
+
+.fa-header__left {
+  position: absolute;
+  left: 20.4px;
+  top: 0;
+  height: var(--fa-bar-h);
+  display: flex;
+  align-items: center;
+}
+
+/* avatar — 24px circle + 1.2px ring (outer 25.2) */
+.fa-avatar {
+  width: 25.2px;                     /* 24 + 1.2 ring, matching the SVG stroke */
+  height: 25.2px;
+  box-sizing: border-box;
+  border: 1.2px solid var(--fa-ink);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--fa-ink);
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+/* traced ink: 14.590 x 7.482, centred on the circle, baseline y 35.732 */
+.fa-avatar__txt {
+  font: 700 11.79px/1 var(--fa-font);
+  transform: translateY(var(--fa-avatar-nudge));
+}
+
+/* points — the underline means it is a link */
+.fa-points {
+  margin-left: 10.07px;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--fa-ink);
+  cursor: pointer;
+}
+.fa-points__value {
+  /* traced: ink 20.808 x 8.620 at (56.484, 27.465) · baseline y 36.085
+              underline 22.320 x 0.641 at (55.674, 38.031)
+     min-width pins the underline (and the coin icon after it) to the traced
+     box; longer balances simply grow past it. */
+  font: 700 16.3px/1 var(--fa-font);
+  display: inline-block;
+  position: relative;
+  min-width: 22.32px;
+  text-align: center;
+  transform: translateY(var(--fa-points-nudge));
+}
+/* the underline is hung off the baseline, not off the box, so a font swap
+   moves it correctly instead of silently drifting */
+.fa-points__value::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0;
+  top: calc(var(--fa-points-baseline) + 1.946px);
+  height: .641px;
+  background: currentColor;
+}
+
+.fa-points__coins {
+  margin-left: 4.63px;
+  width: 18.75px;
+  height: 13.75px;
+  display: block;
+  fill: var(--fa-ink);
+}
+
+/* logo — centred on the page, not between its neighbours */
+.fa-logo {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 18.998px;
+  width: 88.889px;
+  height: 26.009px;
+  display: block;
+}
+
+/* menu — 24 x 17.5 visual box, 20px from the right edge */
+.fa-menu {
+  position: absolute;
+  right: var(--fa-pad);
+  top: 22.498px;
+  width: 24px;
+  height: 17.5px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.fa-menu svg { display: block; width: 100%; height: 100%; }
+
+/* generous touch targets without changing the visuals */
+.fa-avatar::after, .fa-menu::after, .fa-points::after {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 44px; height: 44px;
+  transform: translate(-50%, -50%);
+}
+.fa-avatar, .fa-points { position: relative; }   /* .fa-menu is already absolute */
+
+/* ---- layer 3 : the orb (SOL) ------------------------------- */
+.fa-orb {
+  position: absolute;
+  pointer-events: auto;
+  left: var(--fa-orb-left);
+  top: var(--fa-orb-top);
+  width: var(--fa-orb-size);
+  aspect-ratio: 1;
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: #fff url("assets/orb.png") center / cover no-repeat;
+  box-shadow: 0 1px 7.6px rgba(136, 73, 234, .5),
+              inset 0 -1px 38.2px rgba(27, 94, 206, .11);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fa-orb { transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
+  .fa-orb:active { transform: scale(.92); }
+}
+
+.fa-sr {
+  position: absolute; width: 1px; height: 1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+
+/* ——— התאמות הבר לעמוד הזה ——— */
+/* קבוע, לא דביק: העמוד כולו בנוי על sticky, ובר דביק היה נגרר עם הזרימה */
+.fa-header{ position: fixed; left: 0; right: 0; }
+
+/* הבר שורטט על רוחב 390. הנץ' והזוהר מוגדרים באחוזים, ובלי תקרה
+   הם מתנפחים על דסקטופ — הנץ' היה נפתח ל-487px על מסך 1440 */
+.fa-header__notch{ width: min(var(--fa-notch-w), 132px); }
+.fa-header__decor{ left: 50%; transform: translateX(-50%); width: min(100%, 560px); }
+
+/* מד הגלילה עובר מתחת לבר במקום לחצות אותו */
+.rail{ z-index: 50; }
+</style>
+</head>
+<body>
+
+<!-- ============ COMPONENT: FlyAll top bar ============ -->
+<header class="fa-header">
+
+  <!-- ambient glow + stars, behind the white silhouette -->
+  <div class="fa-header__decor" aria-hidden="true">
+    <svg viewBox="4 0 390 123" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="faGrad" x1="103" y1="0" x2="301" y2="0" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#1B5ECE"/>
+          <stop offset="0.504808" stop-color="#824AEA"/>
+          <stop offset="1" stop-color="#F63DE4"/>
+        </linearGradient>
+        <filter id="faBlur0" x="174.461" y="-25.793" width="166.538" height="154.018" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="20"/></filter>
+        <filter id="faBlur1" x="126.687" y="-9.23051" width="164.195" height="151.674" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="19.4141"/></filter>
+        <filter id="faBlur2" x="119.687" y="-39.1094" width="185.072" height="169.68" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="19.4141"/></filter>
+        <filter id="faBlur3" x="64.1718" y="-16.8282" width="164.195" height="151.674" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="19.4141"/></filter>
+      </defs>
+      <g filter="url(#faBlur0)"><path d="M283.697 49.3951C283.697 70.8393 305.141 88.2237 283.697 88.2237C262.252 88.2237 214.535 85.3577 214.535 63.9134C214.535 42.4692 212.202 14.207 233.647 14.207C346.189 18.1079 283.697 27.9509 283.697 49.3951Z" fill="url(#faGrad)" fill-opacity="0.15"/></g>
+<g filter="url(#faBlur1)"><path d="M234.751 64.7857C234.751 86.2299 256.195 103.614 234.751 103.614C213.307 103.614 165.59 100.748 165.59 79.3041C165.59 57.8599 163.257 29.5977 184.701 29.5977C297.243 33.4985 234.751 43.3415 234.751 64.7857Z" fill="url(#faGrad)" fill-opacity="0.15"/></g>
+<g filter="url(#faBlur2)"><path d="M244.454 43.467C244.454 70.1279 271.072 91.7413 244.454 91.7413C217.837 91.7413 158.608 88.1781 158.608 61.5172C158.608 34.8563 155.712 -0.28125 182.33 -0.28125C322.022 4.56852 244.454 16.8061 244.454 43.467Z" fill="url(#faGrad)" fill-opacity="0.15"/></g>
+<g filter="url(#faBlur3)"><path d="M172.236 57.1881C172.236 78.6323 193.68 96.0167 172.236 96.0167C150.791 96.0167 103.075 93.1506 103.075 71.7064C103.075 50.2622 100.741 22 122.186 22C234.728 25.9008 172.236 35.7439 172.236 57.1881Z" fill="url(#faGrad)" fill-opacity="0.15"/></g>
+      <circle opacity="0.4" cx="278.542" cy="21.8783" r="1.01115" fill="white" fill-opacity="0.5"/>
+<circle opacity="0.4" cx="293.206" cy="53.226" r="1.01115" fill="white" fill-opacity="0.5"/>
+<circle opacity="0.4" cx="208.774" cy="15.8092" r="1.01115" transform="rotate(180 208.774 15.8092)" fill="white" fill-opacity="0.5"/>
+<circle opacity="0.4" cx="146.081" cy="58.7857" r="1.01115" transform="rotate(180 146.081 58.7857)" fill="white" fill-opacity="0.8"/>
+<circle opacity="0.4" cx="192.086" cy="12.7779" r="1.01115" transform="rotate(180 192.086 12.7779)" fill="white" fill-opacity="0.5"/>
+<circle opacity="0.4" cx="131.419" cy="27.4381" r="1.01115" transform="rotate(180 131.419 27.4381)" fill="white" fill-opacity="0.5"/>
+<circle opacity="0.4" cx="148.753" cy="113.997" r="1.01115" transform="rotate(-180 148.753 113.997)" fill="white" fill-opacity="0.8"/>
+<circle opacity="0.4" cx="150.823" cy="84.0514" r="1.01115" transform="rotate(-180 150.823 84.0514)" fill="white" fill-opacity="0.7"/>
+<circle opacity="0.4" cx="281.216" cy="77.0893" r="1.01115" fill="white" fill-opacity="0.8"/>
+<circle opacity="0.4" cx="235.211" cy="123.097" r="1.01115" fill="white" fill-opacity="0.7"/>
+<circle opacity="0.4" cx="295.882" cy="108.437" r="1.01115" fill="white" fill-opacity="0.5"/>
+    </svg>
+  </div>
+
+  <!-- white silhouette: bar + notch under one shadow -->
+  <div class="fa-header__shape" aria-hidden="true">
+    <div class="fa-header__bar"></div>
+    <div class="fa-header__notch">
+      <svg viewBox="129.499 63.7988 132 42.9006" xmlns="http://www.w3.org/2000/svg">
+        <path d="M129.499 63.7988C146.51 63.7988 158.112 79.122 167.491 93.3126C174.724 104.254 185.911 106.827 193.849 106.699C201.926 106.569 210.817 104.672 217.247 97.1036C229.833 82.2878 242.059 63.7988 261.499 63.7988Z" fill="#fff"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- controls -->
+  <div class="fa-header__content">
+
+    <div class="fa-header__left">
+      <button class="fa-avatar" type="button" aria-label="החשבון שלי"><span class="fa-avatar__txt">AG</span></button>
+
+      <a class="fa-points" href="#points">
+        <span class="fa-sr">יתרת הנקודות שלי:</span>
+        <span class="fa-points__value">500</span>
+        <svg class="fa-points__coins" viewBox="86.625 25.125 18.75 13.75" aria-hidden="true"
+             xmlns="http://www.w3.org/2000/svg"><path d="M100.375 28.9977V28.5625C100.375 26.6031 97.4195 25.125 93.5 25.125C89.5805 25.125 86.625 26.6031 86.625 28.5625V31.6875C86.625 33.3195 88.6758 34.6164 91.625 35.0047V35.4375C91.625 37.3969 94.5805 38.875 98.5 38.875C102.42 38.875 105.375 37.3969 105.375 35.4375V32.3125C105.375 30.6953 103.389 29.3969 100.375 28.9977ZM104.125 32.3125C104.125 33.3453 101.72 34.5 98.5 34.5C98.2086 34.5 97.9195 34.4898 97.6344 34.4711C99.3195 33.857 100.375 32.8594 100.375 31.6875V30.2609C102.709 30.6086 104.125 31.5523 104.125 32.3125ZM91.625 33.7383V31.8797C92.2467 31.9607 92.873 32.0009 93.5 32C94.127 32.0009 94.7533 31.9607 95.375 31.8797V33.7383C94.7542 33.83 94.1275 33.8757 93.5 33.875C92.8725 33.8757 92.2458 33.83 91.625 33.7383ZM99.125 30.5883V31.6875C99.125 32.343 98.1555 33.0469 96.625 33.4742V31.6484C97.6336 31.4039 98.4875 31.0398 99.125 30.5883ZM93.5 26.375C96.7195 26.375 99.125 27.5297 99.125 28.5625C99.125 29.5953 96.7195 30.75 93.5 30.75C90.2805 30.75 87.875 29.5953 87.875 28.5625C87.875 27.5297 90.2805 26.375 93.5 26.375ZM87.875 31.6875V30.5883C88.5125 31.0398 89.3664 31.4039 90.375 31.6484V33.4742C88.8445 33.0469 87.875 32.343 87.875 31.6875ZM92.875 35.4375V35.1117C93.0805 35.1195 93.2883 35.125 93.5 35.125C93.8031 35.125 94.0992 35.1148 94.3898 35.0977C94.7127 35.2132 95.0416 35.3113 95.375 35.3914V37.2242C93.8445 36.7969 92.875 36.093 92.875 35.4375ZM96.625 37.4883V35.625C97.2465 35.7085 97.8729 35.7503 98.5 35.75C99.127 35.7509 99.7533 35.7107 100.375 35.6297V37.4883C99.1316 37.6706 97.8684 37.6706 96.625 37.4883ZM101.625 37.2242V35.3984C102.634 35.1539 103.488 34.7898 104.125 34.3383V35.4375C104.125 36.093 103.155 36.7969 101.625 37.2242Z"/></svg>
+      </a>
+    </div>
+
+    <a class="fa-logo" href="#home" aria-label="FlyAll">
+      <svg viewBox="154.555 18.998 88.889 26.009" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="faLogoGrad" x1="160.842" y1="42.732" x2="176.749" y2="20.8419"
+                          gradientUnits="userSpaceOnUse">
+            <stop stop-color="#1B5ECE"/><stop offset="0.11" stop-color="#2F5AD3"/>
+            <stop offset="0.34" stop-color="#644FE0"/><stop offset="0.47" stop-color="#8749EA"/>
+            <stop offset="0.78" stop-color="#CA41E6"/><stop offset="1" stop-color="#FF3CE3"/>
+          </linearGradient>
+        </defs>
+        <path d="M166.969 32.2799H163.768L166.836 37.9317H166.201C165.851 37.9317 165.519 37.7754 165.296 37.5066L161.263 32.6417C161.073 32.413 160.791 32.2812 160.494 32.2812H159.332C158.876 32.2812 158.505 31.9117 158.505 31.4543C158.505 30.9968 158.875 30.6273 159.332 30.6273H160.494C160.791 30.6273 161.073 30.4955 161.263 30.2668L165.296 25.4019C165.519 25.1318 165.851 24.9768 166.201 24.9768H166.836L163.768 30.6286H166.969C172.951 30.6286 177.802 25.7779 177.802 19.7953C177.802 19.3547 177.446 18.998 177.005 18.998H167.013C160.132 18.998 154.555 24.5749 154.555 31.4555C154.555 38.3362 160.132 43.913 167.013 43.913H177.005C177.446 43.913 177.802 43.5564 177.802 43.1158C177.802 37.1332 172.951 32.2825 166.969 32.2825" fill="url(#faLogoGrad)"/>
+<path d="M191.09 23.4069H186.243C184.813 23.3591 183.339 23.9741 182.205 25.097C180.94 26.3478 180.264 28.0198 180.303 29.8004V38.4422C180.303 38.9991 180.757 39.4527 181.313 39.4527H183.241C183.798 39.4527 184.252 38.9991 184.252 38.4422V34.3952C184.252 34.2983 184.331 34.2182 184.429 34.2182H190.449C191.006 34.2182 191.459 33.7647 191.459 33.2078V31.5551C191.459 30.9982 191.006 30.5447 190.449 30.5447L184.252 30.5472V30.1208L184.248 30.0769C184.208 29.812 184.125 28.8856 184.736 28.087C185.638 26.9086 187.215 27.0985 187.23 27.1011L191.09 27.1037C191.585 27.1037 191.986 26.7018 191.986 26.207V24.3049C191.986 23.81 191.585 23.4082 191.09 23.4082V23.4069Z" fill="var(--fa-ink)"/>
+<path d="M197.445 23.4043H195.609C195.051 23.4043 194.598 23.8567 194.598 24.4147V38.428C194.598 38.986 195.051 39.4384 195.609 39.4384H197.445C198.003 39.4384 198.455 38.986 198.455 38.428V24.4147C198.455 23.8567 198.003 23.4043 197.445 23.4043Z" fill="var(--fa-ink)"/>
+<path d="M212.872 27.4915H210.36C209.976 27.4915 209.665 27.8042 209.665 28.1867V33.3669C209.665 34.8192 208.688 35.9137 207.393 35.9137C206.013 35.9137 205.19 34.9872 205.19 33.4354V28.1854C205.19 27.8016 204.877 27.4902 204.495 27.4902H202.075C201.691 27.4902 201.38 27.8029 201.38 28.1854V33.5504C201.38 37.3867 203.421 39.5872 206.981 39.5872C208.09 39.5872 209.011 39.2758 209.691 38.6801C209.533 40.4077 208.528 41.4234 206.936 41.4234C206.137 41.4234 205.43 41.1753 204.893 40.7075C204.656 40.5021 204.314 40.4685 204.039 40.6261L202.051 41.7619C201.858 41.873 201.725 42.063 201.686 42.2826C201.648 42.4997 201.708 42.7194 201.85 42.8874C203.033 44.2738 204.808 45.0065 206.981 45.0065C210.922 45.0065 213.568 42.2477 213.568 38.1426V28.188C213.568 27.8042 213.256 27.4928 212.873 27.4928L212.872 27.4915Z" fill="var(--fa-ink)"/>
+<path d="M226.972 25.7794C226.45 24.1216 225.048 23.0918 223.313 23.0918C221.578 23.0918 220.199 24.1216 219.677 25.7794L215.749 38.5341C215.683 38.7473 215.722 38.9722 215.854 39.1518C215.987 39.3314 216.19 39.4348 216.413 39.4348H218.996C219.305 39.4348 219.58 39.2267 219.665 38.9295L220.417 36.2897L226.232 36.2677L226.984 38.9282C227.068 39.2267 227.343 39.4348 227.653 39.4348H230.235C230.459 39.4348 230.663 39.3314 230.795 39.1518C230.928 38.9722 230.965 38.7473 230.899 38.5341L226.971 25.7794H226.972ZM225.189 32.6859H221.46L223.118 26.9385C223.188 26.6956 223.263 26.6956 223.335 26.6956C223.431 26.6956 223.484 26.6956 223.552 26.9372L225.188 32.6846L225.189 32.6859Z" fill="var(--fa-ink)"/>
+<path d="M233.876 23.4043H235.712C236.271 23.4043 236.723 23.8565 236.723 24.4147V38.428C236.723 38.9862 236.271 39.4384 235.712 39.4384H233.876C233.319 39.4384 232.866 38.9862 232.866 38.428V24.4147C232.866 23.8578 233.318 23.4043 233.876 23.4043Z" fill="var(--fa-ink)"/>
+<path d="M240.597 23.4043H242.433C242.991 23.4043 243.444 23.8565 243.444 24.4147V38.428C243.444 38.9862 242.991 39.4384 242.433 39.4384H240.597C240.04 39.4384 239.587 38.9862 239.587 38.428V24.4147C239.587 23.8578 240.039 23.4043 240.597 23.4043Z" fill="var(--fa-ink)"/>
+      </svg>
+    </a>
+
+    <button class="fa-menu" type="button" aria-label="תפריט" aria-expanded="false">
+      <svg viewBox="0 0 24 17.5" xmlns="http://www.w3.org/2000/svg"
+           stroke="var(--fa-ink)" stroke-width="1.5" stroke-linecap="round">
+        <line x1="0.75" y1="0.75" x2="23.25" y2="0.75"/>
+        <line x1="0.75" y1="8.75" x2="23.25" y2="8.75"/>
+        <line x1="0.75" y1="16.75" x2="23.25" y2="16.75"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- SOL -->
+  <div class="fa-header__notch fa-header__notch--orb">
+    <button class="fa-orb" type="button" aria-label="SOL"></button>
+  </div>
+
+</header>
+<!-- ============ /COMPONENT ============ -->
+
+<div class="rail"><i id="railFill"></i></div>
+
+<!-- פתיחה: חצי הכרטיסייה הראשונה נראית כבר בפריים הראשון -->
+<div class="breath opening" data-bg="#FFFFFF">
+  <div class="hero">
+    <h1 class="hero__title">עם הנקודות שלכם, <b class="hero__mark">Dream Store</b> הופך חלומות לחוויות.</h1>
+  </div>
+</div>
+
+<!-- הסדר קבוע אחרי הווידאו: ורוד → כחול → סגול, וחוזר חלילה.
+     חלון הווידאו יושב במשבצת הסגול, כך שהמחזור נשאר שלם גם אם הווידאו
+     לא נטען ומתגלה הצבע שמתחתיו.
+     הקרקע נשארת לבנה בכל האוויר שבין הזונות — עם מחזור קבוע של שלושה
+     צבעים, רקע צבעוני היה מתנגש בו או חוזר על עצמו מיד. -->
+
+<!-- ZONE 1 — חלון הפתיחה ואחריו שלוש כרטיסיות הקטגוריה מהפיגמה -->
+<section class="zone" data-bg="#FFFFFF">
+  <div class="card c-purple" style="--i:0">
+    <video src="assets/fly-to-your-dream.mp4"
+           autoplay muted loop playsinline preload="auto"></video>
+  </div>
+
+  <!-- טיזר: כרטיסייה אחת שהתוכן שלה מתחלף -->
+  <div class="card c-teaser" style="--i:1">
+    <div class="poster-wrap"><div class="poster po-teaser">
+      <span class="po-city">LDN · BER</span>
+      <span class="po-year">2027</span>
+
+      <div class="arch"></div>
+
+      <div class="tz tz--shows is-on"><img src="assets/cards/celine.png" alt=""></div>
+      <div class="tz tz--sport"><img src="assets/cards/messi.png" alt=""></div>
+      <div class="tz tz--fest"><img src="assets/cards/dancing.png" alt=""></div>
+
+      <div class="tz-pill" id="tzPill">
+        <button class="is-prev" type="button" aria-label="הקודם"><img src="assets/cards/tri.svg" alt=""></button>
+        <b id="tzLabel">סלין דיון · פריז</b>
+        <button class="is-next" type="button" aria-label="הבא"><img src="assets/cards/tri.svg" alt=""></button>
+      </div>
+
+      <h2 class="h1">כל האירועים</h2>
+      <div class="h2box"><span class="h2">במקום אחד.</span></div>
+
+      <button class="po-cta" id="tzCta" type="button">לעוד הופעות
+        <svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg>
+      </button>
+    </div></div>
+  </div>
+</section>
+
+<!-- קטגוריות: הרקע עצמו הופך כהה, בלי כרטיסייה נוספת -->
+<section class="cats" data-bg="#0A0A0A">
+  <a class="cat-item" href="category.html?c=shows" style="--rot:-6deg">
+    <img class="cat-item__st" src="assets/stickers/mic.png" alt="">
+    <h3 class="cat-item__name">הופעות</h3>
+  </a>
+  <a class="cat-item" href="category.html?c=fest" style="--rot:5deg">
+    <img class="cat-item__st" src="assets/stickers/hand.png" alt="">
+    <h3 class="cat-item__name">פסטיבלים</h3>
+  </a>
+  <a class="cat-item" href="category.html?c=sport" style="--rot:-4deg">
+    <img class="cat-item__st" src="assets/stickers/ball.png" alt="">
+    <h3 class="cat-item__name">ספורט</h3>
+  </a>
+  <a class="cat-item" href="category.html?c=ski" style="--rot:7deg">
+    <img class="cat-item__st" src="assets/stickers/ski.png" alt="">
+    <h3 class="cat-item__name">סקי</h3>
+  </a>
+</section>
+
+
+<!-- הטבות: כרטיסייה לבנה שעולה מעל הרקע הכהה -->
+<section class="zone" data-bg="#0A0A0A">
+  <div class="card c-perks" style="--i:0">
+    <div class="poster-wrap"><div class="poster po-perks">
+      <h2 class="pk-head"><span>עם הנקודות</span><span>שלך, <b>גם הדרך</b></span><span>הופכת לחוויה.</span></h2>
+
+      <div class="pk__blob pk--a" style="--y:282px"><i><img src="assets/cards/perk-lounge.png" alt=""></i></div>
+      <span class="pk__pill" style="--y:282px">טרקלין Premium</span>
+      <p class="pk__sub" style="--y:282px">נמל התעופה בן גוריון</p>
+      <p class="pk__price" style="--y:282px"><b>180 ₪</b> · 120 נקודות</p>
+
+      <div class="pk__blob pk--b" style="--y:562px"><i><img src="assets/cards/perk-transfer.png" alt=""></i></div>
+      <span class="pk__pill" style="--y:562px">העברה VIP</span>
+      <p class="pk__sub" style="--y:562px">לנמל התעופה</p>
+      <p class="pk__price" style="--y:562px"><b>290 ₪</b> · 190 נקודות</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- סיום: השחור ממשיך עד הסוף, והפוטר יושב עליו בנגטיב -->
+<footer class="foot foot--dark" id="foot" data-bg="#0A0A0A"></footer>
+
+<script>
+(function(){
+  const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+  const cards=[...document.querySelectorAll('.card')];
+  const railFill=document.getElementById('railFill');
+
+  // לכל כרטיסייה: מי מכסה אותה (הבאה באותה זונה)
+  document.querySelectorAll('.zone').forEach(z=>{
+    const l=[...z.querySelectorAll('.card')];
+    l.forEach((c,i)=> c._next = l[i+1] || null);
+  });
+
+  // נקודת הנעיצה של כל כרטיסייה (משתנה לפי --stack-offset ולפי breakpoint)
+  function measure(){
+    cards.forEach(c=>{ c._pin = parseFloat(getComputedStyle(c).top) || 0; });
+    fitPosters();
+  }
+
+  /* הפוסטרים הם ארטבורד 390x844 שמוקטן כיחידה אחת. הגובה הפנוי הוא המסך
+     פחות בר הניווט, והרוחב מוגבל בנפרד כדי שבמסך צר הוא לא ייחתך בצדדים. */
+  function fitPosters(){
+    const bar = parseFloat(getComputedStyle(document.documentElement)
+                  .getPropertyValue('--fa-bar-h')) || 64;
+    const s = Math.min((innerHeight - bar - 20) / 844, (innerWidth - 24) / 390);
+    document.documentElement.style.setProperty('--ps', s.toFixed(4));
+  }
+
+  const bgVideo=document.querySelector('.card > video');
+  const videoCard=bgVideo && bgVideo.parentElement;
+  let wasPast=null;
+
+  // autoplay נחסם לפעמים עד שיש אינטראקציה — מנסים שוב כשאפשר
+  function tryPlay(){
+    if(bgVideo && !bgVideo.dataset.off) bgVideo.play().catch(()=>{});
+  }
+  if(bgVideo){
+    bgVideo.addEventListener('canplay', tryPlay);
+    addEventListener('pointerdown', tryPlay, {once:true});
+    addEventListener('touchstart', tryPlay, {once:true, passive:true});
+    // הדפדפן עוצר מדיה מסיבות שלו (טאב ברקע, שינוי גודל) — מחזירים
+    bgVideo.addEventListener('pause', ()=>{ if(!document.hidden && !bgVideo.dataset.off) setTimeout(tryPlay,0); });
+    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) tryPlay(); });
+  }
+
+  const openEl=document.querySelector('.breath.opening');
+
+
+  /* ——— כרטיסיית הטיזר ———
+     מצב אחד גלוי בכל רגע. ההחלפה היא הצלבת שקיפות של שכבות שכבר
+     נמצאות ב-DOM, כך שאין בנייה מחדש ואין הבהוב בין המצבים. */
+  const TEASERS = [
+    { cls:'tz--shows', label:'סלין דיון · פריז',          pw:219, cat:'shows', cta:'לעוד הופעות',      route:'TLV · PAR' },
+    { cls:'tz--sport', label:'קלאסיקו · סנטיאגו ברנבאו',  pw:310, cat:'sport', cta:'לעוד אירועי ספורט', route:'TLV · MAD' },
+    { cls:'tz--fest',  label:'טומרולנד · צרפת',           pw:219, cat:'fest',  cta:'לעוד פסטיבלים',    route:'TLV · BRU' },
+  ];
+  const TZ_MS = 2000;
+
+  (function teaser(){
+    const pill  = document.getElementById('tzPill');
+    const label = document.getElementById('tzLabel');
+    const cta   = document.getElementById('tzCta');
+    const route = document.querySelector('.po-teaser .po-city');
+    const card  = document.querySelector('.c-teaser');
+    if(!pill || !card) return;
+
+    const layers = TEASERS.map(t => card.querySelector('.' + t.cls));
+    let idx = 0, timer = null, visible = true;
+
+    function show(next){
+      if(next === idx) return;
+      layers[idx].classList.remove('is-on');
+      layers[next].classList.add('is-on');
+      idx = next;
+
+      // הטקסט מתחלף באמצע ההעלמה, כך שלא רואים את ההחלפה עצמה
+      pill.classList.add('is-swap');
+      pill.closest('.po-teaser').classList.add('is-swap');
+      setTimeout(()=>{
+        const t = TEASERS[idx];
+        label.textContent = t.label;
+        if(route) route.textContent = t.route;
+        cta.firstChild.textContent = t.cta + ' ';
+        cta.dataset.cat = t.cat;
+        pill.style.setProperty('--pw', t.pw + 'px');
+        pill.classList.remove('is-swap');
+        pill.closest('.po-teaser').classList.remove('is-swap');
+      }, 300);
+    }
+    const step = d => show((idx + d + TEASERS.length) % TEASERS.length);
+
+    function play(){ stop(); if(visible) timer = setInterval(()=>step(1), TZ_MS); }
+    function stop(){ if(timer){ clearInterval(timer); timer = null; } }
+
+    pill.querySelector('.is-prev').addEventListener('click', ()=>{ step(-1); play(); });
+    pill.querySelector('.is-next').addEventListener('click', ()=>{ step(1);  play(); });
+    cta.dataset.cat = TEASERS[0].cat;
+    cta.addEventListener('click', ()=> location.href = 'category.html?c=' + cta.dataset.cat);
+
+    // לא מסתובב כשלא רואים אותו
+    new IntersectionObserver(es=>{
+      visible = es[0].isIntersecting;
+      visible ? play() : stop();
+    }, { threshold:.25 }).observe(card);
+
+    document.addEventListener('visibilitychange', ()=> document.hidden ? stop() : play());
+    pill.style.setProperty('--pw', TEASERS[0].pw + 'px');
+    if(route) route.textContent = TEASERS[0].route;
+    play();
+  })();
+
+  function goToCard(c){
+    if(!c) return;
+    const y = c.getBoundingClientRect().top + scrollY - (c._pin || 0);
+    scrollTo({ top: Math.max(0, Math.round(y)), behavior: 'smooth' });
+  }
+  let ticking=false;
+  function update(){
+    ticking=false;
+    const vh=innerHeight;
+    for(const c of cards){
+      if(!c._next){ c.style.setProperty('--p',0); continue; }
+      const nextTop=c._next.getBoundingClientRect().top;
+      const pin=c._next._pin;
+      const p=clamp((vh-nextTop)/(vh-pin),0,1);
+      c.style.setProperty('--p', p.toFixed(4));
+    }
+    paintBg();
+
+    // פאן + זום לאורך הגלילה הפותחת. אחורה זה מתהפך מעצמו כי הכל נגזר מ-scrollY
+    if(bgVideo){
+      // הכל נגזר מגובה הרצועה הלבנה שנמדד בפועל, כדי שהם לא יוכלו להיפרד
+      const openH = openEl ? openEl.offsetHeight : vh * .5;
+      const z = clamp(scrollY / openH, 0, 1);
+      bgVideo.style.setProperty('--z', z.toFixed(4));
+
+      /* הרצועה הגלויה של החלון בפריים הפתיחה היא (vh - openH), וכדי שכרטיס
+         הטיסה ינחת במרכזה צריך להסיט את הסרטון מעלה בחצי מגובה הרצועה.
+         ההסטה נחסמת מול מה שמוסתר מתחת לקפל, אחרת נפער חלל בתחתית. */
+      const cr0 = videoCard.getBoundingClientRect();
+      const want = (openH / 2) * (1 - z);
+      bgVideo.style.setProperty('--pan', (-Math.min(want, Math.max(0, cr0.top))).toFixed(1) + 'px');
+
+      // מתנגן רק כל עוד החלון שלו נראה ולא מכוסה לגמרי ע"י הבאה בתור
+      const covered = parseFloat(getComputedStyle(videoCard).getPropertyValue('--p')) > .995;
+      const off = covered || cr0.bottom <= 0 || cr0.top >= vh;
+      if(off !== wasPast){
+        wasPast = off;
+        if(off){ bgVideo.dataset.off='1'; bgVideo.pause(); }
+        else { delete bgVideo.dataset.off; bgVideo.play().catch(()=>{}); }
+      }
+    }
+    const max=document.documentElement.scrollHeight-vh;
+    railFill.style.height=(clamp(scrollY/(max||1),0,1)*100).toFixed(2)+'%';
+  }
+  addEventListener('scroll',()=>{ if(!ticking){ ticking=true; requestAnimationFrame(update); } },{passive:true});
+  addEventListener('resize',()=>{ measure(); measureBg(); update(); });
+
+  /* ——— החלפת רקע ———
+     המעבר קורה כ-1.3 מסך *לפני* שהאזור מגיע, כלומר בזמן שהכרטיסייה האחרונה
+     עדיין מכסה הכל. כך העין אף פעם לא תופסת את האינטרפולציה בין שני הצבעים. */
+  const LOOKAHEAD = 1.3;
+  const bgEls=[...document.querySelectorAll('[data-bg]')];
+  let stops=[], lastBg='';
+
+  function measureBg(){
+    stops = bgEls.map(el=>({ y: el.offsetTop - innerHeight*LOOKAHEAD, color: el.dataset.bg }))
+                 .sort((a,b)=>a.y-b.y);
+  }
+  function paintBg(){
+    let color = stops.length ? stops[0].color : '#FFFFFF';
+    for(const s of stops){ if(scrollY >= s.y) color = s.color; else break; }
+    if(color !== lastBg){ lastBg = color; document.body.style.backgroundColor = color; }
+  }
+
+
+
+
+  /* ——— פוטר ———
+     הסימן נלקח מהבר שכבר בעמוד, עם שינוי שם ל-id של הגרדיאנט כדי
+     ששני העותקים לא יתנגשו. */
+  const FOOT_COLS = [
+    ['חוויות',  ['ספורט', 'הופעות', 'סקי', 'פסטיבלים']],
+    ['המועדון', ['הנקודות שלי', 'איך צוברים', 'ההזמנות שלי', 'כרטיס FlyAll']],
+    ['שירות',   ['שאלות נפוצות', 'יצירת קשר', 'מדיניות ביטולים', 'נגישות']],
+  ];
+  const SOCIAL = [
+    ['Instagram','<rect x="3" y="3" width="18" height="18" rx="5.2"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1.15" fill="currentColor" stroke="none"/>'],
+    ['Facebook', '<path fill="currentColor" stroke="none" d="M13.6 21v-7.3h2.5l.4-2.9h-2.9V9c0-.85.24-1.42 1.45-1.42h1.55V4.99c-.27-.04-1.19-.12-2.26-.12-2.24 0-3.77 1.37-3.77 3.87v2.06H8v2.9h2.57V21h3.03z"/>'],
+    ['TikTok',   '<path fill="currentColor" stroke="none" d="M16.6 3h-2.72v11.63a2.06 2.06 0 1 1-1.72-2.03V9.85a4.9 4.9 0 1 0 4.44 4.88V9.2a5.8 5.8 0 0 0 3.4 1.09V7.58A3.4 3.4 0 0 1 16.6 4.2V3z"/>'],
+    ['YouTube',  '<path fill="currentColor" stroke="none" d="M21.6 8.2a2.5 2.5 0 0 0-1.74-1.78C18.29 6 12 6 12 6s-6.29 0-7.86.42A2.5 2.5 0 0 0 2.4 8.2 26.3 26.3 0 0 0 2 12a26.3 26.3 0 0 0 .4 3.8 2.5 2.5 0 0 0 1.74 1.78C5.71 18 12 18 12 18s6.29 0 7.86-.42a2.5 2.5 0 0 0 1.74-1.78A26.3 26.3 0 0 0 22 12a26.3 26.3 0 0 0-.4-3.8zM10 15.1V8.9l5.2 3.1-5.2 3.1z"/>'],
+  ];
+  const FOOT_LEGAL = ['תנאי שימוש', 'מדיניות פרטיות', 'הצהרת נגישות'];
+
+  (function buildFoot(){
+    const box = document.getElementById('foot');
+    if(!box) return;
+    const logo = document.querySelector('.fa-logo svg');
+    const mark = logo ? logo.outerHTML.replace(/faLogoGrad/g,'faFootGrad') : '';
+    box.innerHTML =
+      '<div class="foot__brand">' + mark + '<p>החלומות שלך,<br>בנקודות שלך.</p></div>' +
+      '<div class="foot__cols">' + FOOT_COLS.map(([t,l]) =>
+        '<div><h4>'+t+'</h4>' + l.map(x=>'<a href="#">'+x+'</a>').join('') + '</div>').join('') + '</div>' +
+      '<div class="foot__social">' + SOCIAL.map(([n,d]) =>
+        '<a href="#" aria-label="'+n+'"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" ' +
+        'stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg></a>').join('') + '</div>' +
+      '<div class="foot__rule"></div>' +
+      '<div class="foot__legal"><nav>' + FOOT_LEGAL.map(x=>'<a href="#">'+x+'</a>').join('') + '</nav>' +
+      '<small>© 2026 FlyAll. כל הזכויות שמורות. מימוש נקודות בכפוף לתקנון המועדון ' +
+      'ולזמינות המלאי. התמונות והסרטונים להמחשה בלבד.</small></div>';
+  })();
+
+
+  // שורות הקטגוריות נכנסות אחת-אחת כשהן מגיעות למסך
+  const catIo = new IntersectionObserver(es=>{
+    es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('is-in'); catIo.unobserve(e.target); } });
+  }, { threshold:.35 });
+  document.querySelectorAll('.cat-item').forEach(r=>catIo.observe(r));
+
+  measure();
+  measureBg();
+  update();
+})();
+</script>
+</body>
+</html>

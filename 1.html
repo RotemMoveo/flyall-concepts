@@ -1,0 +1,2026 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<script>if(window.top===window.self){location.replace("./#1")}</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FlyAll — קונספט 1</title>
+
+<style>
+/* ---- brand face ---- */
+@font-face{font-family:'Almoni';src:url('assets/fonts/almoni-dl-aaa-300.ttf') format('truetype');font-weight:300;font-display:swap}
+@font-face{font-family:'Almoni';src:url('assets/fonts/almoni-dl-aaa-400.ttf') format('truetype');font-weight:400;font-display:swap}
+@font-face{font-family:'Almoni';src:url('assets/fonts/almoni-dl-aaa-700.ttf') format('truetype');font-weight:700;font-display:swap}
+@font-face{font-family:'Almoni';src:url('assets/fonts/almoni-dl-aaa-900.ttf') format('truetype');font-weight:900;font-display:swap}
+
+/* ============================================================
+   FLYALL — TOP NAVIGATION BAR
+   Reference: Hader.svg, authored at 390 x 123 (iPhone 13/14 logical width).
+   Every number below is traced from that file.
+   ============================================================ */
+
+:root {
+  --fa-font: 'Almoni', system-ui, sans-serif;
+  --fa-ink: #1B5ECE;                 /* single UI colour: logo, avatar, points, menu */
+  --fa-grad-a: #1B5ECE;
+  --fa-grad-b: #824AEA;              /* stop at 50.48% */
+  --fa-grad-c: #F63DE4;
+
+  --fa-bar-h: 64px;                  /* fixed: bar height does NOT scale */
+  --fa-bar-radius: 16px;
+  --fa-pad: 20px;                    /* physical side padding */
+
+  --fa-notch-w: 33.846%;             /* 132 / 390 — scales with viewport width */
+  --fa-notch-ratio: 132 / 42.9006;   /* 63.7988 -> 106.6994 */
+  --fa-notch-top: 63.8px;            /* meets the bar's bottom edge */
+
+  --fa-orb-size: 25.7576%;           /* 34 / 132 of the notch — scales with it.
+                                        To pin the orb at a fixed 34px instead,
+                                        set: --fa-orb-size: 34px */
+  --fa-orb-left: 36.29%;             /* 47.903 / 132 */
+  --fa-orb-top: 3.651%;              /* 1.5664 / 42.9006 */
+
+  /* type trims, measured against Hader.svg with Almoni */
+  --fa-points-nudge: -0.767px;
+  --fa-points-baseline: 13px;        /* box top -> baseline, at 16.3px/1 */
+  --fa-avatar-nudge: 0.13px;
+  --fa-z: 100;
+}
+
+/* ---- shell ------------------------------------------------ */
+.fa-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--fa-z);
+  height: var(--fa-bar-h);
+  direction: ltr;                    /* the bar is NOT mirrored in RTL */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ---- layer 0 : ambient glow + stars (behind the white bar) -- */
+.fa-header__decor {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+.fa-header__decor svg { display: block; width: 100%; height: auto; }
+
+/* ---- layer 1 : the white silhouette (bar + notch share one shadow) ---- */
+.fa-header__shape {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 1;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .25));
+  pointer-events: none;
+}
+.fa-header__bar {
+  height: var(--fa-bar-h);
+  background: #fff;
+  border-radius: 0 0 var(--fa-bar-radius) var(--fa-bar-radius);
+}
+.fa-header__notch {
+  position: absolute;
+  top: var(--fa-notch-top);
+  left: 50.128%;                     /* the traced shape sits 0.5px right of centre */
+  transform: translateX(-50%);
+  width: var(--fa-notch-w);
+  aspect-ratio: var(--fa-notch-ratio);
+}
+.fa-header__notch svg { display: block; width: 100%; height: 100%; }
+
+/* the orb needs its own stacking layer: translateX(-50%) on .fa-header__notch
+   makes it a stacking context, so a z-index on the child alone stays trapped inside */
+.fa-header__notch--orb { z-index: 3; pointer-events: none; }
+
+/* ---- layer 2 : controls ------------------------------------ */
+.fa-header__content {
+  position: relative;
+  z-index: 2;
+  height: var(--fa-bar-h);
+}
+
+.fa-header__left {
+  position: absolute;
+  left: 20.4px;
+  top: 0;
+  height: var(--fa-bar-h);
+  display: flex;
+  align-items: center;
+}
+
+/* avatar — 24px circle + 1.2px ring (outer 25.2) */
+.fa-avatar {
+  width: 25.2px;                     /* 24 + 1.2 ring, matching the SVG stroke */
+  height: 25.2px;
+  box-sizing: border-box;
+  border: 1.2px solid var(--fa-ink);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--fa-ink);
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+/* traced ink: 14.590 x 7.482, centred on the circle, baseline y 35.732 */
+.fa-avatar__txt {
+  font: 700 11.79px/1 var(--fa-font);
+  transform: translateY(var(--fa-avatar-nudge));
+}
+
+/* points — the underline means it is a link */
+.fa-points {
+  margin-left: 10.07px;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--fa-ink);
+  cursor: pointer;
+}
+.fa-points__value {
+  /* traced: ink 20.808 x 8.620 at (56.484, 27.465) · baseline y 36.085
+              underline 22.320 x 0.641 at (55.674, 38.031)
+     min-width pins the underline (and the coin icon after it) to the traced
+     box; longer balances simply grow past it. */
+  font: 700 16.3px/1 var(--fa-font);
+  display: inline-block;
+  position: relative;
+  min-width: 22.32px;
+  text-align: center;
+  transform: translateY(var(--fa-points-nudge));
+}
+/* the underline is hung off the baseline, not off the box, so a font swap
+   moves it correctly instead of silently drifting */
+.fa-points__value::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0;
+  top: calc(var(--fa-points-baseline) + 1.946px);
+  height: .641px;
+  background: currentColor;
+}
+
+.fa-points__coins {
+  margin-left: 4.63px;
+  width: 18.75px;
+  height: 13.75px;
+  display: block;
+  fill: var(--fa-ink);
+}
+
+/* logo — centred on the page, not between its neighbours */
+.fa-logo {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 18.998px;
+  width: 88.889px;
+  height: 26.009px;
+  display: block;
+}
+
+/* menu — 24 x 17.5 visual box, 20px from the right edge */
+.fa-menu {
+  position: absolute;
+  right: var(--fa-pad);
+  top: 22.498px;
+  width: 24px;
+  height: 17.5px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.fa-menu svg { display: block; width: 100%; height: 100%; }
+
+/* generous touch targets without changing the visuals */
+.fa-avatar::after, .fa-menu::after, .fa-points::after {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 44px; height: 44px;
+  transform: translate(-50%, -50%);
+}
+.fa-avatar, .fa-points { position: relative; }   /* .fa-menu is already absolute */
+
+/* ---- layer 3 : the orb (SOL) ------------------------------- */
+.fa-orb {
+  position: absolute;
+  pointer-events: auto;
+  left: var(--fa-orb-left);
+  top: var(--fa-orb-top);
+  width: var(--fa-orb-size);
+  aspect-ratio: 1;
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: #fff url("assets/orb.png") center / cover no-repeat;
+  box-shadow: 0 1px 7.6px rgba(136, 73, 234, .5),
+              inset 0 -1px 38.2px rgba(27, 94, 206, .11);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fa-orb { transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
+  .fa-orb:active { transform: scale(.92); }
+}
+
+.fa-sr {
+  position: absolute; width: 1px; height: 1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+
+/* ============================================================
+   CONCEPT 2 — "DREAM A LITTLE DREAM"
+   Illustrated / dreamlike. The hero is one painted sphere and the
+   line written on it, and every element arrives on its own beat.
+   ============================================================ */
+
+:root{
+  /* ---- the dream palette -----------------------------------
+     Pulled off the illustrations, not invented: the three brand
+     hues at the strength they are painted at, plus a tint ramp
+     built from those same hues. No cream and no warm neutral —
+     the illustrations have none, and a peach wash behind them was
+     what made the whole scene read as washed out. */
+  --c-blue:    #1862D9;              /* illustration royal blue   */
+  --c-purple:  #8A4BF3;              /* illustration violet       */
+  --c-magenta: #FC3DE0;              /* illustration hot magenta  */
+
+  /* The page is plain white. All the colour is carried by the orb and
+     the sparkles, so it lands the way it does in the illustrations:
+     saturated shapes on paper, never a tinted wash. */
+  --paper: #FFFFFF;
+
+  /* the orb: the same sphere as the one in the nav bar, at hero scale.
+     Its lowest point is what the layout hangs off — the headline sits just
+     inside it and the sub-head just under it. */
+  /* Sized off BOTH axes for the same reason the headline is: vw alone
+     leaves a laptop's short viewport with a circle too small to hold the
+     line, svh alone overfills a phone. */
+  --orb-d: min(176vw, 138svh, 1020px);
+  --orb-bottom: 86svh;
+  /* Read off assets/orb.png: that sphere holds full colour to about 65% of
+     its radius and is still fading where the artwork is cropped, which
+     works out at roughly 4.5% of the diameter as a gaussian. Scaling the
+     figure, not the pixel value, is what keeps the hero circle reading as
+     the same object as the one in the bar. */
+  --orb-blur: calc(var(--orb-d) * .045);
+  /* the lowest point of the header's notch — nothing may sit above it */
+  --head-clear: calc(var(--fa-bar-h) + 48px);
+  /* Sized off BOTH axes: vw alone fills a phone and overflows a laptop's
+     height, svh alone leaves a phone half empty. The last term keeps the
+     line inside the orb it is written on — the longest line runs about
+     4.4x the font size and may cover at most three quarters of the circle. */
+  --dream-fs: min(19vw, 13svh, 156px, calc(var(--orb-d) * .164));
+  /* the headline's centre line: two fifths of the way down the band between
+     the header's notch and the arc */
+  --dream-mid: calc(var(--head-clear) + (var(--orb-bottom) - var(--head-clear)) * .40);
+
+  --ink:      #241A5C;               /* deep dream indigo */
+  --ink-soft: #6357A8;
+
+  /* one curve for the whole reveal: a held breath, then a long glide out */
+  --part: cubic-bezier(.45,.04,.16,1);
+  --ease: cubic-bezier(.22,.9,.24,1);
+
+  /* The lowest point of the header's notch. It is 33.846% of the viewport
+     wide and 3.0769 times as wide as it is tall, so 33.846/3.0769 = 11vw
+     of height, hung off the notch's own top. Unlike --head-clear this
+     tracks the notch as the window widens, which is what a centred
+     column under it has to clear. */
+  --notch-floor: calc(var(--fa-notch-top) + 11vw);
+
+  /* the inner category page's open/close curve, and the two measures
+     its plates grow between */
+  --grow: cubic-bezier(.32,.72,.16,1);
+  --plate-floor: clamp(430px, 64svh, 600px);
+  --oval-h:  clamp(104px, 15svh, 136px);
+  --oval-hx: clamp(210px, 33svh, 320px);
+
+  --k: 1;                            /* time scale — ?slow=3 stretches the whole reveal */
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper)}
+body{
+  font-family:var(--fa-font);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+/* nothing scrolls until the hero has finished arriving */
+html.sealed, html.sealed body{overflow:hidden; height:100%}
+/* The category view locks the page behind it with a class of its own:
+   .sealed belongs to the hero's arrival and is dropped on a timer, which
+   would unlock the page underneath an open category a second later. */
+html.catlock, html.catlock body{overflow:hidden; height:100%}
+img{display:block}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+
+/* ---- the orb ------------------------------------------------
+   The sphere from the nav bar, blown up to hold the headline. It is
+   read off that asset rather than invented: blue low-left, violet
+   through the middle, magenta up-right, with the sphere's own highlight
+   along the top and its deepest magenta pooling bottom-right.
+   It is the first thing to arrive; everything else follows it in. */
+.orb{
+  position:relative; flex:none;
+  width:var(--orb-d); height:var(--orb-d);
+  /* the negative margin is what puts its LOWEST point at --orb-bottom:
+     everything else in the hero then simply falls underneath it */
+  margin-top:calc(var(--orb-bottom) - var(--orb-d));
+  opacity:0; transform:scale(.94);
+  /* beat 1 of 7 — see the ladder under .w */
+  transition:opacity calc(1.1s * var(--k)) var(--ease),
+             transform calc(1.7s * var(--k)) var(--part);
+}
+/* The colour sits on its own layer so the blur never touches the headline.
+   It spreads past the element's box, which is the point — nothing clips it
+   but the hero, and the sub-head below is spaced to clear the haze. */
+.orb::before{
+  content:''; position:absolute; inset:0; z-index:0;
+  border-radius:50%;
+  background:
+    radial-gradient(64% 46% at 50% 2%,  rgba(255,255,255,.42) 0%, rgba(255,255,255,0) 72%),
+    radial-gradient(62% 58% at 86% 86%, rgba(252,61,224,.70) 0%, rgba(252,61,224,0) 68%),
+    radial-gradient(58% 54% at 12% 84%, rgba(24,98,217,.72) 0%, rgba(24,98,217,0) 66%),
+    linear-gradient(38deg,
+      var(--c-blue) 0%, #4A57DD 24%, #7B4DF0 48%, #B345EA 74%, var(--c-magenta) 100%);
+  filter:blur(var(--orb-blur));
+}
+.parted .orb{opacity:1; transform:none}
+
+/* ---- layer 1 · the hero underneath ------------------------ */
+main{position:relative; z-index:2}
+.hero{
+  position:relative;
+  overflow:hidden;                   /* the orb runs off the top of the frame */
+  height:100svh;
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+  padding:0 16px calc(6svh + env(safe-area-inset-bottom));
+  text-align:center;
+}
+
+/* Hung off the hero rather than off the orb's lower edge. Bottom-aligning
+   it inside the circle pinned it to the arc, and the arc has since moved
+   down — the line belongs in the upper half of the sphere, where there is
+   room for three lines of it. The .40 puts its centre two fifths of the way
+   down the band between the header's notch and the arc, so it keeps that
+   position as the circle grows and shrinks with the viewport. */
+.dream{
+  margin:0;
+  position:absolute; z-index:2;      /* above the orb's blurred colour layer */
+  left:0; right:0;
+  top:var(--dream-mid);
+  transform:translateY(-50%);
+  font-family:var(--fa-font);
+  font-weight:300;
+  line-height:.98;
+  letter-spacing:0;
+  color:#fff;
+}
+/* Sized off BOTH axes: vw alone fills a phone and overflows a laptop's
+   height, svh alone leaves a phone half empty. min() lets the line grow
+   until it hits whichever edge comes first. */
+.dream__l1, .dream__l2, .dream__l3{
+  display:block;
+  font-size:var(--dream-fs);
+}
+/* the one word the sentence turns on. On the orb the gradient it used to
+   carry has nothing left to say — the orb is the gradient — so the word
+   is held by weight alone. */
+.dream__em{
+  font-weight:700;
+  color:#fff;
+}
+
+/* THE HERO LADDER — one element at a time, each clearly after the last:
+     orb 0s · line1 .30 · line2 .48 · line3 .66 · sub .88 · bar 1.06
+     · sparkles 1.24 · cue 1.48. The gaps are wider than they were when
+     the clouds set the pace, because nothing covers the stagger now. */
+.dream__l1 .w{--wd:.30s}
+.dream__l2 .w{--wd:.48s}
+.dream__l3 .w{--wd:.66s}
+.w{
+  display:inline-block;
+  opacity:0;
+  transform:translateY(22px) scale(.97);
+  filter:blur(16px);
+  transition:opacity calc(.7s * var(--k)) var(--ease),
+             transform calc(1.1s * var(--k)) var(--part),
+             filter calc(.85s * var(--k)) var(--ease);
+  transition-delay:calc(var(--wd, 0s) * var(--k));
+}
+.parted .w{opacity:1; transform:none; filter:blur(0)}
+
+.hero__sub{
+  /* On the orb now, under the headline rather than under the arc. Three
+     lines at .98 means half the headline is 1.47x its font size, so this
+     sits a measured gap below its last baseline however the type scales. */
+  position:absolute; z-index:2;
+  left:0; right:0;
+  top:calc(var(--dream-mid) + var(--dream-fs) * 1.47 + clamp(16px, 3svh, 32px));
+  margin:0 auto;
+  font:700 clamp(15px,4.1vw,18px)/1.5 var(--fa-font);
+  color:#fff;
+  max-width:26ch;
+  opacity:0; transform:translateY(14px);
+  transition:opacity calc(.8s * var(--k)) var(--ease) calc(.88s * var(--k)),
+             transform calc(.9s * var(--k)) var(--part) calc(.88s * var(--k));
+}
+.parted .hero__sub{opacity:1; transform:none}
+
+
+/* ---- sparkles ---------------------------------------------- */
+.spark{
+  position:absolute; z-index:2; pointer-events:none;
+  width:var(--sz); height:var(--sz);
+  left:var(--sx); top:var(--sy);
+  opacity:0;
+  transition:opacity calc(1s * var(--k)) var(--ease) calc((1.24s + var(--sd)) * var(--k));
+}
+.parted .spark{opacity:1; animation:twinkle var(--sp) var(--ease) calc((1.24s + var(--sd)) * var(--k)) infinite}
+.spark svg{width:100%;height:100%;display:block}
+@keyframes twinkle{
+  0%,100%{opacity:.35; transform:scale(.82) rotate(0deg)}
+  50%    {opacity:1;   transform:scale(1.06) rotate(8deg)}
+}
+
+/* ---- header: stays hidden until the sky is clear ----------- */
+.fa-header{
+  position:fixed; top:0; left:0; right:0; z-index:700;
+  opacity:0; transform:translateY(-10px);
+  transition:opacity calc(1s * var(--k)) var(--ease) calc(1.06s * var(--k)),
+             transform calc(1.1s * var(--k)) var(--part) calc(1.06s * var(--k));
+}
+.parted .fa-header{opacity:1; transform:none}
+
+/* ---- scroll cue: the page continues below ------------------ */
+.cue{
+  position:absolute; z-index:600; left:50%; bottom:calc(18px + env(safe-area-inset-bottom));
+  transform:translateX(-50%);
+  display:flex; flex-direction:column; align-items:center; gap:7px;
+  font:400 10px/1 var(--fa-font); letter-spacing:0;
+  color:var(--ink-soft);
+  opacity:0;
+  transition:opacity calc(.9s * var(--k)) var(--ease) calc(1.48s * var(--k));
+}
+.parted .cue{opacity:.62}
+.scrolled .cue{opacity:0; transition:opacity .3s var(--ease)}
+.cue i{display:block;width:1px;height:24px;background:linear-gradient(180deg,currentColor,transparent);
+  animation:fall 2.4s var(--ease) infinite}
+@keyframes fall{
+  0%  {transform:scaleY(.2);transform-origin:top;opacity:0}
+  40% {transform:scaleY(1);opacity:1}
+  100%{transform:scaleY(1);transform-origin:bottom;opacity:0}
+}
+
+/* ============================================================
+   SECTION 2 — ATTRACTION CARDS
+   Two by two. The silhouettes are traced from the reference art, so
+   every card is the same square and only the cut differs.
+   ============================================================ */
+.cards{
+  position:relative;
+  /* no forced screenful: the grid sets the height and the section sits
+     right under the hero instead of opening a field of empty sky */
+  display:flex; align-items:center; justify-content:center;
+  padding:calc(var(--fa-bar-h) + 2svh) 18px 3svh;
+}
+.cards__grid{
+  display:grid; grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:clamp(14px, 3.4vw, 30px);
+  width:min(100%, 680px);
+}
+.acard{
+  margin:0;
+  opacity:0; transform:translate3d(0, 34px, 0) scale(.97);
+  transition:opacity .7s var(--ease) var(--d), transform .9s var(--part) var(--d);
+}
+.cards.is-live .acard{opacity:1; transform:none}
+
+.acard__tile{
+  /* the page's own blue → purple → pink, run on the square's diagonal so
+     the ground reads as one gradient rather than a flat swatch */
+  background:linear-gradient(145deg,
+              var(--fa-grad-a) 0%,
+              var(--fa-grad-b) 52%,
+              var(--fa-grad-c) 100%);
+  padding:7% 7% 0;
+  box-shadow:0 16px 34px rgba(96,48,190,.26);
+}
+.acard__media{position:relative; width:100%; aspect-ratio:1; overflow:hidden}
+.acard__media video{
+  width:100%; height:100%; object-fit:cover; display:block;
+  /* barely touched: the ground carries the colour now, so de-punching the
+     footage on top of it only made both halves of the card look faded */
+  filter:saturate(1.02) contrast(.98) brightness(1.03);
+}
+.acard__wash{
+  position:absolute; inset:0; pointer-events:none; mix-blend-mode:screen;
+  background:linear-gradient(160deg,rgba(24,98,217,.20) 0%,rgba(138,75,243,.14) 54%,rgba(252,61,224,.18) 100%);
+}
+.acard__cap{
+  display:block; padding:7% 0 9%;
+  font:900 clamp(17px, 4.6vw, 30px)/1.05 var(--fa-font);
+  letter-spacing:0; text-align:center; color:#fff;   /* the ground is saturated now */
+}
+
+/* ============================================================
+   SECTION 3 — HOW IT WORKS
+   One part at a time, swiped sideways, as in the first concept.
+   The parts used to be stacked down the page with a rule drawing
+   between them: three screens of scrolling to read three sentences,
+   and the rule doing the job a pager does better. The dots under the
+   track say how many parts there are and which one is open.
+   ============================================================ */
+.how{
+  position:relative;
+  /* definite, not a minimum: with only a min-height the section's own height
+     stays content-driven, the track has no leftover space to be given, and
+     flex:1 on it distributes nothing */
+  height:100svh;
+  display:flex; flex-direction:column;
+  /* the bar's height is not the clearance — the header's tongue hangs below
+     it, and the first line was landing behind that */
+  padding:calc(var(--head-clear) + 2svh) 0 calc(5svh + env(safe-area-inset-bottom));
+  text-align:center;
+}
+.how__track{
+  /* min-height:0 or flex:1 cannot shrink it below its content, and a slide
+     too tall for the viewport pushes the pager off the bottom of the page */
+  flex:1; min-height:0;
+  list-style:none; margin:0; padding:0;
+  display:flex;
+  overflow-x:auto; overflow-y:hidden;
+  scroll-snap-type:x mandatory;
+  /* a sideways fling that runs out of track must not walk the document
+     with it — the page still scrolls vertically as normal */
+  overscroll-behavior-x:contain;
+  scrollbar-width:none;
+}
+.how__track::-webkit-scrollbar{display:none}
+
+/* Exactly one viewport wide, which is what lets the pager find the open
+   part by measuring rather than by counting pixels of scroll: the document
+   is RTL, and scrollLeft runs backwards there. */
+/* One accent per part, walking the brand ramp from the first to the last.
+   It is what carries the hierarchy here: the title is not the biggest thing
+   on the slide, it is the coloured one. */
+.step{
+  flex:none;
+  width:100%;
+  scroll-snap-align:center;
+  display:flex; flex-direction:column; align-items:center;
+  padding:0 20px;
+}
+.step:nth-child(1){--tone:var(--c-blue);    --tone-wash:rgba(24,98,217,.085)}
+.step:nth-child(2){--tone:var(--c-purple);  --tone-wash:rgba(138,75,243,.085)}
+.step:nth-child(3){--tone:var(--c-magenta); --tone-wash:rgba(252,61,224,.075)}
+/* Every part is laid on the same rails. The title, the lead, the seat for
+   the illustration and the note each hold a band of fixed height, so none
+   of them moves as you swipe from one part to the next. Two of the three
+   drawings are square and the third is a wide one — left to size their own
+   rows they dragged the note up and down by fifty pixels a slide. */
+.step__body{
+  flex:1; min-height:0;              /* fills the track, so the seat below can
+                                        measure its slack against something */
+  width:min(100%, 620px);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:clamp(7px, 1.4svh, 14px);
+}
+
+/* every piece rises out of the same progress, a beat apart */
+.step__title, .step__lead, .step__art, .step__note{
+  opacity:var(--p, 0);
+  transform:translate3d(0, calc((1 - var(--p, 0)) * 26px), 0);
+  will-change:opacity, transform;
+}
+
+/* ---- the pager: how many parts, and which one is open ------ */
+.how__dots{
+  flex:none;
+  display:flex; justify-content:center; align-items:center; gap:9px;
+  margin-top:clamp(16px, 2.8svh, 30px);
+  /* armed by the section, not by the per-element reveal: it sits below the
+     line that reveal measures against and would never have surfaced */
+  opacity:0; transform:translate3d(0, 14px, 0);
+  transition:opacity calc(.7s * var(--k)) var(--ease) calc(.3s * var(--k)),
+             transform calc(.8s * var(--k)) var(--part) calc(.3s * var(--k));
+}
+.how.is-live .how__dots{opacity:1; transform:none}
+.how__dots button{
+  flex:none;
+  width:9px; height:9px; padding:0;
+  border-radius:999px;
+  background:rgba(36,26,92,.15);
+  transition:width .38s var(--part), background .38s var(--ease);
+}
+.how__dots button.on{
+  width:30px;
+  background:linear-gradient(94deg,var(--c-blue),var(--c-purple) 52%,var(--c-magenta));
+}
+
+/* The title is set barely larger than the line under it — what separates
+   them is that one is bold and in the part's colour and the other is plain
+   dark text. The old scale put a 38px title over a 15px grey lead, which
+   read as a headline with a caption rather than as a heading and its
+   sentence. */
+.step__title{
+  margin:0;
+  font:700 clamp(24px, 6.4vw, 34px)/1.25 var(--fa-font);
+  letter-spacing:0;
+  color:var(--tone);
+  max-width:100%;                    /* the measure was cutting the longest
+                                        title onto a second line and taking
+                                        the rails with it */
+  text-wrap:balance;
+  min-height:1.25em;                 /* one line, held open */
+  display:flex; align-items:center;
+}
+.step__lead{
+  margin:0;
+  font:400 clamp(22px, 5.9vw, 31px)/1.45 var(--fa-font);
+  letter-spacing:0;
+  color:var(--ink);
+  max-width:100%;                    /* a ch-based measure came out narrower
+                                        than the column and broke the
+                                        authored line break in the first part */
+  min-height:2.9em;                 /* two lines at 1.45 */
+  display:flex; align-items:center;
+}
+
+/* The seat for an illustration. The clips are rendered on an opaque white
+   plate — mp4 carries no alpha — and the page is white, so the plate has
+   nothing to hide from: no keying, no blend mode (browsers composite
+   <video> outside the blending pass often enough that it cannot be relied
+   on, and the frame is dropped entirely by some capture paths) and no panel.
+   The artwork simply sits on the paper it was drawn on. The clips ship as
+   animated WebP for the same reason the first set did: an <img> needs no
+   autoplay policy, no observer and no overlay surface to be painted. */
+/* The seat takes whatever the four fixed bands leave over, up to a ceiling.
+   Every slide shares the same track height and the same bands, so the seat
+   resolves to the same number on all three — the rails hold — and a short
+   viewport shrinks the drawing instead of pushing the pager off the screen. */
+.step__art{
+  position:relative;
+  flex:1 1 auto;
+  width:100%;
+  min-height:clamp(110px, 20svh, 190px);
+  max-height:min(36svh, 320px);
+}
+/* Each illustration keeps its own proportions and is capped on BOTH axes,
+   so a wide one and a tall one carry the same visual weight without either
+   being letterboxed into a square of empty space.
+
+   Taken out of flow on purpose. The seat's height is resolved by flex, not
+   specified, so a percentage max-height against it computes to none — which
+   left the one portrait drawing at its natural height, hanging out of the
+   seat and over the note. An absolutely positioned box resolves its
+   percentage against the containing block, and inset:0 with margin:auto
+   centres it on both axes. */
+.step__art img{
+  display:block;
+  position:absolute; inset:0; margin:auto;
+  width:auto; height:auto;
+  max-width:min(80%, 320px);
+  max-height:100%;
+}
+
+/* The line each part closes on is the one thing on the slide that carries a
+   number, so it is framed off the paper rather than left to read as a third
+   paragraph. The box is one size on every part — a one-line note and a
+   two-line note sit in the same card. */
+.step__note{
+  margin:0;
+  display:flex; flex-direction:column; justify-content:center;
+  font:400 clamp(18px, 4.9vw, 25px)/1.45 var(--fa-font);
+  letter-spacing:0;
+  color:var(--ink);
+  width:100%;
+  max-width:none;
+  min-height:calc(4.8em + 32px);   /* the tallest of the three: the bold
+                                      line plus two lines under it */
+  padding:16px 18px;
+  border-radius:20px;
+  background:var(--tone-wash);
+}
+/* the number the step turns on, carrying its own line — and the part's
+   colour, so the box repeats the title's move one level down */
+.step__note b{
+  display:block;
+  font-weight:700;
+  font-size:1.2em;
+  line-height:1.3;
+  color:var(--tone);
+  margin-bottom:.22em;
+}
+
+/* ============================================================
+   SECTION 5 — FOOTER
+   Concept 1's footer, in negative. There it sat on the page's own light
+   sky; here it closes the page on a band of the brand gradient, so the
+   same blue → purple → pink that opens the hero also ends it.
+   ============================================================ */
+.foot{
+  position:relative;
+  z-index:2;                         /* same layer as main */
+  margin-top:clamp(46px, 9svh, 104px);
+  padding:52px 0 38px;
+  /* wide band: a shallow angle keeps the three stops readable across the
+     width instead of compressing them into the short vertical axis */
+  background:linear-gradient(110deg,
+              var(--fa-grad-a) 0%,
+              var(--fa-grad-b) 52%,
+              var(--fa-grad-c) 100%);
+  color:#fff;
+  text-align:right;
+}
+.foot a{text-decoration:none; color:#fff}
+
+.foot__brand{padding:0 22px; display:flex; align-items:center; gap:13px}
+.foot__brand svg{display:block; width:89px; height:26px; flex:none}
+.foot__brand p{
+  margin:0; font:400 13px/1.35 var(--fa-font);
+  letter-spacing:0; color:rgba(255,255,255,.76);
+}
+/* the mark is drawn in the brand blue and its own gradient — on the
+   gradient itself both vanish, so it reads as a white knockout here */
+.foot__brand svg path{fill:#fff !important}
+
+.foot__cols{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
+  padding:38px 22px 0;
+}
+.foot__cols h4{
+  margin:0 0 10px;
+  font:700 15px/1.3 var(--fa-font); letter-spacing:0;
+  color:#fff;
+}
+.foot__cols a{
+  display:block;
+  font:400 14px/1.95 var(--fa-font); letter-spacing:0;
+  color:rgba(255,255,255,.78);
+  transition:color .2s var(--ease);
+}
+.foot__cols a:hover,.foot__cols a:active{color:#fff}
+
+.foot__social{display:flex; gap:10px; padding:34px 22px 0; justify-content:flex-start}
+.foot__social a{
+  width:42px; height:42px; border-radius:50%;
+  display:grid; place-items:center;
+  color:#fff; background:rgba(255,255,255,.16);
+  transition:background .25s var(--ease), transform .2s var(--ease);
+}
+.foot__social a:hover{background:rgba(255,255,255,.28)}
+.foot__social a:active{transform:scale(.92)}
+.foot__social svg{display:block}
+
+.foot__rule{height:1px; margin:34px 22px 0; background:rgba(255,255,255,.26)}
+.foot__legal{padding:18px 22px 0}
+.foot__legal nav{display:flex; flex-wrap:wrap; gap:4px 16px}
+.foot__legal nav a{
+  font:400 13px/1.6 var(--fa-font); letter-spacing:0;
+  color:rgba(255,255,255,.78);
+}
+.foot__legal small{
+  display:block; margin-top:14px;
+  font:300 12px/1.6 var(--fa-font); letter-spacing:0;
+  color:rgba(255,255,255,.62);
+}
+
+/* arrives a beat at a time, like the cards above it */
+.foot__in{
+  opacity:0; transform:translate3d(0, 24px, 0);
+  transition:opacity .7s var(--ease) var(--d,0s), transform .85s var(--ease) var(--d,0s);
+}
+.foot.is-live .foot__in{opacity:1; transform:none}
+
+/* ============================================================
+   SECTION 4 — THE PERKS
+   The sentence, then the perks as plain cards: white plate, the
+   media on top, the name and one quiet line under it. Our own
+   window cut and sharp corners rather than the reference's
+   rounded photo, so the section belongs to this page.
+   ============================================================ */
+.perks{
+  position:relative; z-index:2;
+  padding:clamp(24px, 6svh, 70px) 20px clamp(34px, 8svh, 86px);
+  text-align:center;
+}
+.perks__say{
+  margin:0 auto;
+  max-width:16ch;
+  font:300 clamp(30px, 8.4vw, 56px)/1.12 var(--fa-font);
+  letter-spacing:0; color:var(--ink);
+}
+.perks__say b{
+  font-weight:700;
+  background:linear-gradient(100deg, var(--fa-grad-a) 4%, var(--fa-grad-b) 48%, var(--fa-grad-c) 96%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+
+.perks__grid{
+  margin:clamp(26px, 5.5svh, 54px) auto 0;
+  max-width:680px;
+  display:grid; grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:clamp(14px, 3.4vw, 28px);
+}
+
+.pk{
+  margin:0;
+  background:#fff;
+  padding:clamp(10px, 2.4vw, 16px) clamp(10px, 2.4vw, 16px) clamp(16px, 3.4vw, 24px);
+  box-shadow:0 14px 34px rgba(96,48,190,.14);
+  opacity:0; transform:translate3d(0, 26px, 0);
+  transition:opacity .7s var(--ease) var(--d), transform .85s var(--part) var(--d);
+}
+.perks.is-live .pk{opacity:1; transform:none}
+
+.pk__media{
+  position:relative;
+  width:100%; aspect-ratio:1;
+  overflow:hidden;
+  clip-path:url(#ac1);               /* the window this page cuts everywhere */
+}
+.pk__media video{width:100%;height:100%;object-fit:cover;display:block}
+.pk__wash{
+  position:absolute; inset:0; pointer-events:none; mix-blend-mode:screen;
+  background:linear-gradient(160deg,
+    rgba(24,98,217,.18) 0%, rgba(138,75,243,.12) 54%, rgba(252,61,224,.16) 100%);
+}
+
+.pk__title{
+  margin:clamp(13px, 2.8vw, 20px) 0 0;
+  font:700 clamp(17px, 4.6vw, 26px)/1.15 var(--fa-font);
+  letter-spacing:0; color:var(--ink);
+}
+.pk__sub{
+  margin:clamp(6px, 1.4vw, 10px) 0 0;
+  font:400 clamp(12px, 3.4vw, 16px)/1.45 var(--fa-font);
+  letter-spacing:0; color:var(--ink-soft);
+}
+
+@media (prefers-reduced-motion: reduce){
+  .pk{opacity:1 !important; transform:none !important}
+}
+
+/* ============================================================
+   THE INNER CATEGORY PAGE
+   Not a second hero — it opens over the home page as its own view.
+   Everything in it is this page's language: white paper, the three
+   hues used softly rather than at poster strength, indigo ink, the
+   light headline weight, and the same four-point sparkles.
+   ============================================================ */
+.cat{
+  position:fixed; inset:0; z-index:650;
+  background:var(--paper);
+  overflow-y:auto; overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  opacity:0; visibility:hidden; transform:translate3d(0, 20px, 0);
+  transition:opacity .48s var(--ease), transform .62s var(--part),
+             visibility 0s linear .62s;
+}
+.cat.is-open{
+  opacity:1; visibility:visible; transform:none;
+  transition:opacity .48s var(--ease), transform .62s var(--part),
+             visibility 0s linear 0s;
+}
+/* the soft field the dreamy page is lit by, without a sphere in it:
+   the orb's own three hues, blurred past recognition and laid behind
+   the list so the paper is never flatly white */
+.cat::before{
+  content:''; position:fixed; z-index:0; pointer-events:none;
+  left:50%; top:-24svh; width:min(150vw, 1180px); aspect-ratio:1;
+  transform:translateX(-50%);
+  border-radius:50%;
+  background:
+    radial-gradient(60% 56% at 84% 84%, rgba(252,61,224,.30) 0%, rgba(252,61,224,0) 66%),
+    radial-gradient(58% 54% at 14% 82%, rgba(24,98,217,.28) 0%, rgba(24,98,217,0) 64%),
+    radial-gradient(70% 60% at 50% 20%, rgba(138,75,243,.22) 0%, rgba(138,75,243,0) 70%);
+  filter:blur(90px);
+  opacity:0;
+  transition:opacity .9s var(--ease) .1s;
+}
+.cat.is-open::before{opacity:1}
+
+.cat__wrap{
+  position:relative; z-index:1;
+  max-width:720px; margin:0 auto;
+  padding:calc(var(--notch-floor) + clamp(18px, 3.4svh, 34px)) 20px 7svh;
+  text-align:center;
+}
+
+/* ---- the view's own head: type only, no second hero ---- */
+.cat__back{
+  display:inline-flex; align-items:center; gap:7px;
+  font:400 14px/1 var(--fa-font); letter-spacing:0;
+  color:var(--ink-soft); background:none; padding:0;
+  transition:color .2s var(--ease);
+}
+.cat__back:hover{color:var(--ink)}
+.cat__back svg{width:13px;height:13px;flex:none;fill:none;stroke:currentColor;
+  stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* the headline weight of this page: light, with the one word that
+   matters held by weight and the gradient — as "כאן" is in the hero */
+.cat__title{
+  margin:16px 0 0;
+  font:300 clamp(40px, 11.5vw, 76px)/1.04 var(--fa-font);
+  letter-spacing:0; color:var(--ink);
+}
+.cat__title b{
+  font-weight:700;
+  background:linear-gradient(100deg, var(--fa-grad-a) 4%, var(--fa-grad-b) 48%, var(--fa-grad-c) 96%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.cat__lead{
+  margin:12px auto 0;
+  font:400 clamp(15px, 4.1vw, 18px)/1.5 var(--fa-font);
+  letter-spacing:0; color:var(--ink-soft); max-width:34ch;
+}
+.cat__count{
+  margin:26px 0 0;
+  font:700 13px/1 var(--fa-font); letter-spacing:0; color:var(--ink-soft);
+}
+
+/* ---- the list --------------------------------------------- */
+.cat__list{
+  list-style:none; margin:20px 0 0; padding:0;
+  display:flex; flex-direction:column; gap:clamp(14px, 2.6svh, 26px);
+}
+
+.ev{
+  opacity:0; transform:translate3d(0, 24px, 0);
+  transition:opacity .65s var(--ease) var(--d), transform .8s var(--part) var(--d);
+}
+.cat.is-open .ev{opacity:1; transform:none}
+
+/* The plate: a landscape rectangle, sharp cornered, in the three hues
+   at the strength this page paints with — a lit sky, not a poster. */
+.ev__plate{
+  position:relative;
+  min-height:0;
+  padding:clamp(16px, 4vw, 26px) clamp(14px, 3.4vw, 22px);
+  display:flex; flex-direction:column; align-items:center;
+  text-align:center;
+  /* the same ground the lobby's category cards stand on, down to the angle */
+  background:linear-gradient(145deg,
+              var(--fa-grad-a) 0%, var(--fa-grad-b) 52%, var(--fa-grad-c) 100%);
+  box-shadow:0 16px 34px rgba(96,48,190,.26);
+  /* the plate has no height of its own: the ellipse and the panel below
+     it each animate theirs, and the plate follows them frame by frame,
+     so no copy length can ever be clipped */
+  transition:min-height .62s var(--grow), box-shadow .5s var(--ease);
+}
+.ev.is-open .ev__plate{
+  min-height:var(--plate-floor);
+  box-shadow:0 28px 58px rgba(96,48,190,.32);
+}
+
+/* ---- the one window onto the footage ---- */
+/* One cut for the whole list — the lobby's #ac1: a straight top with
+   rounded corners and a softly scalloped underside. The other three
+   lobby shapes carry notches that read as damage once they are stretched
+   into a landscape box, so the list keeps this one throughout. It is
+   declared in objectBoundingBox units, so it simply follows the box as
+   the window grows. The width is capped so the cut never flattens into
+   a letterbox. */
+.ev__media{
+  position:relative; flex:none;
+  width:min(100%, 440px); margin-inline:auto;
+  height:var(--oval-h);
+  overflow:hidden;
+  clip-path:url(#ac1);
+  transition:height .62s var(--grow);
+}
+.ev.is-open .ev__media{height:var(--oval-hx)}
+.ev__media video{width:100%;height:100%;object-fit:cover;display:block}
+.ev__wash{
+  position:absolute; inset:0; pointer-events:none; mix-blend-mode:screen;
+  background:linear-gradient(160deg,
+    rgba(24,98,217,.18) 0%, rgba(138,75,243,.12) 54%, rgba(252,61,224,.16) 100%);
+}
+
+/* ---- the type on the plate: indigo on paper, as everywhere here ---- */
+.ev__head{flex:none; width:100%; padding:clamp(18px, 3.6vw, 26px) 2px 0}
+.ev__title{
+  margin:0;
+  font:700 clamp(19px, 5.2vw, 27px)/1.2 var(--fa-font);
+  letter-spacing:0; color:#fff;
+}
+.ev__meta{
+  margin:clamp(9px, 1.8vw, 13px) 0 0;
+  display:flex; align-items:center; justify-content:center; gap:9px; flex-wrap:wrap;
+  font:400 clamp(12px, 3.4vw, 14px)/1.5 var(--fa-font);
+  letter-spacing:0; color:rgba(255,255,255,.82);
+}
+.ev__meta i{width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.6}
+
+/* ---- the part that only exists once the plate has grown ----
+   0fr -> 1fr animates a block nobody measured, so the copy can be any
+   length and the plate still opens smoothly. */
+.ev__more{
+  display:grid; grid-template-rows:0fr;
+  transition:grid-template-rows .62s var(--grow);
+}
+.ev.is-open .ev__more{grid-template-rows:1fr}
+.ev__more-in{overflow:hidden; min-height:0; padding:0 2px}
+.ev__body, .ev__price, .ev__buy{
+  opacity:0; transform:translateY(10px);
+  transition:opacity .4s var(--ease), transform .5s var(--part);
+}
+/* they arrive after the plate has made room, one behind the other */
+.ev.is-open .ev__body {opacity:1; transform:none; transition-delay:.26s}
+.ev.is-open .ev__price{opacity:1; transform:none; transition-delay:.34s}
+.ev.is-open .ev__buy  {opacity:1; transform:none; transition-delay:.42s}
+
+.ev__body{
+  margin:clamp(20px, 3.6vw, 28px) auto 0;
+  font:400 clamp(13px, 3.6vw, 15px)/1.72 var(--fa-font);
+  letter-spacing:0; color:rgba(255,255,255,.9); max-width:44ch;
+}
+.ev__price{
+  margin:clamp(20px, 3.6vw, 28px) 0 0;
+  font:400 clamp(13px, 3.6vw, 15px)/1.5 var(--fa-font);
+  letter-spacing:0; color:rgba(255,255,255,.82);
+}
+.ev__price b{display:block; font-weight:900; font-size:1.42em; line-height:1.25; color:#fff}
+.ev__price span{display:block; margin-top:7px; font-size:.92em; color:rgba(255,255,255,.7)}
+
+/* the only saturated thing in the view, the way "כאן" is the only
+   saturated thing in the hero */
+.ev__buy{
+  display:inline-block; margin:clamp(22px, 4vw, 30px) 0 0;
+  padding:0 34px; height:50px;
+  font:900 16px/50px var(--fa-font); letter-spacing:0;
+  color:var(--fa-ink); text-decoration:none;
+  background:#fff;
+  box-shadow:0 10px 24px rgba(28,14,80,.24);
+  transition:transform .2s var(--ease), box-shadow .25s var(--ease),
+             opacity .4s var(--ease);
+}
+.ev__buy:hover{box-shadow:0 14px 30px rgba(28,14,80,.32)}
+.ev__buy:active{transform:scale(.96)}
+
+/* ---- the CTA, on the floor of the plate ---- */
+.ev__cta{
+  margin-top:clamp(20px, 3.6vw, 28px); align-self:center;
+  display:inline-flex; align-items:center; gap:8px;
+  padding:12px 20px;
+  background:rgba(255,255,255,.18); color:#fff;
+  font:700 clamp(13px, 3.6vw, 15px)/1 var(--fa-font); letter-spacing:0;
+  transition:background .22s var(--ease);
+}
+.ev__cta:hover{background:rgba(255,255,255,.3)}
+.ev__cta svg{
+  width:14px;height:14px;flex:none;
+  fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+  transition:transform .45s var(--grow);
+}
+.ev.is-open .ev__cta svg{transform:rotate(180deg)}
+
+/* the page's own sparkles, so the view reads as the same world */
+.cat__spark{
+  position:absolute; z-index:0; pointer-events:none;
+  width:var(--sz); height:var(--sz); left:var(--sx); top:var(--sy);
+  opacity:0;
+  transition:opacity .9s var(--ease) calc(.5s + var(--sd));
+}
+.cat.is-open .cat__spark{
+  opacity:1;
+  animation:twinkle var(--sp) var(--ease) calc(.5s + var(--sd)) infinite;
+}
+.cat__spark svg{width:100%;height:100%;display:block}
+
+/* the attraction cards are the way in */
+.acard{cursor:pointer}
+
+/* ---- replay (review affordance, not part of the design) ---- */
+.replay{
+  position:fixed; z-index:600; left:16px; bottom:calc(16px + env(safe-area-inset-bottom));
+  height:34px; padding:0 14px; border-radius:999px;
+  font:700 12px/1 var(--fa-font); color:var(--ink-soft);
+  background:rgba(255,255,255,.72); backdrop-filter:blur(8px);
+  box-shadow:0 2px 10px rgba(43,34,96,.12), inset 0 0 0 1px rgba(43,34,96,.07);
+  opacity:0; transition:opacity calc(.6s * var(--k)) var(--ease) calc(1.80s * var(--k));
+}
+.parted .replay{opacity:1}
+
+/* the reset has to be instantaneous — a staggered reveal played
+   backwards strands half the scene in mid-air */
+.rewind, .rewind *{transition:none !important; animation:none !important}
+
+/* ---- reduced motion ----------------------------------------
+   No cascade: everything fades in together, in place, and nothing
+   travels or scales. */
+@media (prefers-reduced-motion: reduce){
+  .w,.hero__sub,.fa-header,.orb,.spark{
+    transition-duration:.4s !important; transition-delay:0s !important;
+  }
+  .w{transform:none !important; filter:none !important}
+  .orb{transform:none !important}
+  .parted .spark{animation:none}
+  .step__title,.step__lead,.step__art,.step__note,.how__dots{
+    opacity:1 !important; transform:none !important;
+  }
+  .how__track{scroll-snap-type:none}
+  .acard,.foot__in{opacity:1 !important; transform:none !important}
+  .cue i{animation:none}
+}
+</style>
+</head>
+
+<body>
+
+<svg class="ac-defs" width="0" height="0" aria-hidden="true" focusable="false"><defs><clipPath id="ac0" clipPathUnits="objectBoundingBox"><path d="M0.0345,0.0063Q0.0493,0 0.4984,0Q0.9474,0 0.9613,0.0056Q0.9753,0.0111 0.9827,0.0187Q0.9901,0.0264 0.9934,0.0354Q0.9967,0.0444 0.9975,0.0674Q0.9984,0.0903 0.9984,0.3354Q0.9984,0.5806 0.9934,0.5972Q0.9885,0.6139 0.9786,0.6257Q0.9688,0.6375 0.9531,0.6458Q0.9375,0.6542 0.9227,0.6569Q0.9079,0.6597 0.8956,0.6653Q0.8832,0.6708 0.875,0.6778Q0.8668,0.6847 0.8618,0.6931Q0.8569,0.7014 0.8536,0.7104Q0.8503,0.7194 0.8503,0.734Q0.8503,0.7486 0.8635,0.7722Q0.8766,0.7958 0.8783,0.8083Q0.8799,0.8208 0.875,0.8375Q0.8701,0.8542 0.8536,0.8701Q0.8372,0.8861 0.8191,0.8924Q0.801,0.8986 0.7812,0.8986Q0.7615,0.8986 0.7393,0.8889Q0.7171,0.8792 0.7039,0.8764Q0.6908,0.8736 0.6719,0.8757Q0.653,0.8778 0.6423,0.8819Q0.6316,0.8861 0.6201,0.8951Q0.6086,0.9042 0.6036,0.9104Q0.5987,0.9167 0.5896,0.9389Q0.5806,0.9611 0.5699,0.9715Q0.5592,0.9819 0.5444,0.9889Q0.5296,0.9958 0.5074,0.9972Q0.4852,0.9986 0.4655,0.9931Q0.4457,0.9875 0.4342,0.9785Q0.4227,0.9694 0.4161,0.9611Q0.4095,0.9528 0.4013,0.9319Q0.3931,0.9111 0.3849,0.9028Q0.3766,0.8944 0.3635,0.8868Q0.3503,0.8792 0.3281,0.8764Q0.3059,0.8736 0.2903,0.8771Q0.2747,0.8806 0.2574,0.8889Q0.2401,0.8972 0.2171,0.8979Q0.1941,0.8986 0.1752,0.8917Q0.1562,0.8847 0.1447,0.8743Q0.1332,0.8639 0.125,0.8479Q0.1168,0.8319 0.1168,0.8194Q0.1168,0.8069 0.1316,0.775Q0.1464,0.7431 0.1447,0.7243Q0.1431,0.7056 0.1357,0.6951Q0.1283,0.6847 0.1184,0.6764Q0.1086,0.6681 0.0765,0.6583Q0.0444,0.6486 0.0312,0.6396Q0.0181,0.6306 0.009,0.6132Q0,0.5958 0,0.3167Q0,0.0375 0.0099,0.025Q0.0197,0.0125 0.0345,0.0063Z"/></clipPath><clipPath id="ac1" clipPathUnits="objectBoundingBox"><path d="M0.0411,0.0031Q0.051,0 0.5008,0Q0.9507,0 0.9589,0.0031Q0.9671,0.0063 0.9753,0.0134Q0.9836,0.0204 0.9885,0.0267Q0.9934,0.033 0.9959,0.0425Q0.9984,0.0519 0.9984,0.4395Q0.9984,0.827 0.9934,0.8522Q0.9885,0.8774 0.9811,0.8931Q0.9737,0.9088 0.9523,0.9332Q0.9309,0.9575 0.8988,0.9741Q0.8668,0.9906 0.8396,0.9945Q0.8125,0.9984 0.7985,0.9976Q0.7845,0.9969 0.7697,0.9945Q0.7549,0.9921 0.7319,0.9827Q0.7089,0.9733 0.6793,0.9497Q0.6497,0.9261 0.6291,0.9458Q0.6086,0.9654 0.5905,0.9756Q0.5724,0.9858 0.5493,0.9914Q0.5263,0.9969 0.5058,0.9976Q0.4852,0.9984 0.4605,0.9937Q0.4359,0.989 0.4153,0.9803Q0.3947,0.9717 0.3692,0.9489Q0.3438,0.9261 0.3174,0.9497Q0.2911,0.9733 0.2632,0.9835Q0.2352,0.9937 0.2081,0.9961Q0.1809,0.9984 0.1628,0.9961Q0.1447,0.9937 0.1217,0.9851Q0.0987,0.9764 0.0888,0.9709Q0.0789,0.9654 0.06,0.9481Q0.0411,0.9308 0.028,0.9104Q0.0148,0.8899 0.0074,0.8608Q0,0.8318 0,0.4403Q0,0.0487 0.0041,0.0377Q0.0082,0.0267 0.0197,0.0165Q0.0312,0.0063 0.0411,0.0031Z"/></clipPath><clipPath id="ac2" clipPathUnits="objectBoundingBox"><path d="M0.2319,0.0008Q0.4112,0 0.6793,0.0008Q0.9474,0.0016 0.9597,0.0063Q0.972,0.011 0.9786,0.0165Q0.9852,0.022 0.9918,0.0377Q0.9984,0.0534 0.9984,0.3061Q0.9984,0.5589 0.9942,0.5856Q0.9901,0.6122 0.977,0.6554Q0.9638,0.6986 0.9465,0.7323Q0.9293,0.7661 0.9145,0.7865Q0.8997,0.8069 0.8618,0.8454Q0.824,0.8838 0.7952,0.905Q0.7664,0.9262 0.75,0.9349Q0.7336,0.9435 0.7048,0.956Q0.676,0.9686 0.6431,0.978Q0.6102,0.9874 0.5683,0.9929Q0.5263,0.9984 0.4679,0.9945Q0.4095,0.9906 0.3734,0.9819Q0.3372,0.9733 0.2837,0.949Q0.2303,0.9246 0.1965,0.8995Q0.1628,0.8744 0.1423,0.8548Q0.1217,0.8352 0.1044,0.814Q0.0872,0.7928 0.0724,0.7692Q0.0576,0.7457 0.0452,0.7198Q0.0329,0.6939 0.0197,0.6484Q0.0066,0.6028 0.0033,0.5714Q0,0.54 0,0.4246Q0,0.3093 0.0008,0.1813Q0.0016,0.0534 0.0058,0.0408Q0.0099,0.0283 0.0214,0.0181Q0.0329,0.0078 0.0428,0.0047Q0.0526,0.0016 0.2319,0.0008Z"/></clipPath><clipPath id="ac3" clipPathUnits="objectBoundingBox"><path d="M0.2796,0.0007Q0.5066,0 0.7262,0.0007Q0.9457,0.0014 0.9613,0.0069Q0.977,0.0124 0.9852,0.022Q0.9934,0.0317 0.9959,0.042Q0.9984,0.0523 0.9959,0.2128Q0.9934,0.3733 0.9893,0.3864Q0.9852,0.3994 0.977,0.4132Q0.9688,0.427 0.9359,0.4607Q0.903,0.4945 0.8964,0.5055Q0.8898,0.5165 0.8832,0.5365Q0.8766,0.5565 0.8766,0.5771Q0.8766,0.5978 0.8816,0.6178Q0.8865,0.6377 0.8997,0.6577Q0.9128,0.6777 0.94,0.7039Q0.9671,0.73 0.9803,0.7555Q0.9934,0.781 0.9959,0.8113Q0.9984,0.8416 0.9942,0.8588Q0.9901,0.876 0.9803,0.8939Q0.9704,0.9118 0.9515,0.9318Q0.9326,0.9518 0.9104,0.9656Q0.8882,0.9793 0.8553,0.9883Q0.8224,0.9972 0.7895,0.9972Q0.7566,0.9972 0.7278,0.9897Q0.699,0.9821 0.676,0.969Q0.653,0.9559 0.6308,0.9387Q0.6086,0.9215 0.5855,0.9125Q0.5625,0.9036 0.5428,0.9001Q0.523,0.8967 0.4984,0.8967Q0.4737,0.8967 0.4465,0.9029Q0.4194,0.9091 0.3923,0.9229Q0.3651,0.9366 0.3421,0.9539Q0.3191,0.9711 0.2969,0.98Q0.2747,0.989 0.2541,0.9931Q0.2336,0.9972 0.2031,0.9972Q0.1727,0.9972 0.1546,0.9931Q0.1365,0.989 0.1209,0.9835Q0.1053,0.978 0.0938,0.9711Q0.0822,0.9642 0.06,0.9456Q0.0378,0.927 0.023,0.9029Q0.0082,0.8788 0.0049,0.8657Q0.0016,0.8526 0.0008,0.8299Q0,0.8072 0.0058,0.7851Q0.0115,0.7631 0.0288,0.739Q0.0461,0.7149 0.0715,0.6894Q0.097,0.6639 0.1069,0.6412Q0.1168,0.6185 0.1184,0.6067Q0.1201,0.595 0.1192,0.5716Q0.1184,0.5482 0.1118,0.5317Q0.1053,0.5152 0.0929,0.4972Q0.0806,0.4793 0.0559,0.4552Q0.0312,0.4311 0.0222,0.4167Q0.0132,0.4022 0.0074,0.3836Q0.0016,0.365 0.0025,0.1997Q0.0033,0.0344 0.0107,0.0248Q0.0181,0.0152 0.0255,0.0103Q0.0329,0.0055 0.0428,0.0034Q0.0526,0.0014 0.2796,0.0007Z"/></clipPath></defs></svg>
+
+
+<header class="fa-header">
+
+  <!-- ambient glow + stars, behind the white silhouette -->
+  <div class="fa-header__decor" aria-hidden="true">
+    <svg viewBox="4 0 390 123" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="faGrad" x1="103" y1="0" x2="301" y2="0" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#1B5ECE"/>
+          <stop offset="0.504808" stop-color="#824AEA"/>
+          <stop offset="1" stop-color="#F63DE4"/>
+        </linearGradient>
+        <filter id="faBlur0" x="174.461" y="-25.793" width="166.538" height="154.018" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="20"/></filter>
+        <filter id="faBlur1" x="126.687" y="-9.23051" width="164.195" height="151.674" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="19.4141"/></filter>
+        <filter id="faBlur2" x="119.687" y="-39.1094" width="185.072" height="169.68" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="19.4141"/></filter>
+        <filter id="faBlur3" x="64.1718" y="-16.8282" width="164.195" height="151.674" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="19.4141"/></filter>
+      </defs>
+      <g filter="url(#faBlur0)"><path d="M283.697 49.3951C283.697 70.8393 305.141 88.2237 283.697 88.2237C262.252 88.2237 214.535 85.3577 214.535 63.9134C214.535 42.4692 212.202 14.207 233.647 14.207C346.189 18.1079 283.697 27.9509 283.697 49.3951Z" fill="url(#faGrad)" fill-opacity="0.15"/></g>
+<g filter="url(#faBlur1)"><path d="M234.751 64.7857C234.751 86.2299 256.195 103.614 234.751 103.614C213.307 103.614 165.59 100.748 165.59 79.3041C165.59 57.8599 163.257 29.5977 184.701 29.5977C297.243 33.4985 234.751 43.3415 234.751 64.7857Z" fill="url(#faGrad)" fill-opacity="0.15"/></g>
+<g filter="url(#faBlur2)"><path d="M244.454 43.467C244.454 70.1279 271.072 91.7413 244.454 91.7413C217.837 91.7413 158.608 88.1781 158.608 61.5172C158.608 34.8563 155.712 -0.28125 182.33 -0.28125C322.022 4.56852 244.454 16.8061 244.454 43.467Z" fill="url(#faGrad)" fill-opacity="0.15"/></g>
+<g filter="url(#faBlur3)"><path d="M172.236 57.1881C172.236 78.6323 193.68 96.0167 172.236 96.0167C150.791 96.0167 103.075 93.1506 103.075 71.7064C103.075 50.2622 100.741 22 122.186 22C234.728 25.9008 172.236 35.7439 172.236 57.1881Z" fill="url(#faGrad)" fill-opacity="0.15"/></g>
+      <circle opacity="0.4" cx="278.542" cy="21.8783" r="1.01115" fill="white" fill-opacity="0.5"/>
+<circle opacity="0.4" cx="293.206" cy="53.226" r="1.01115" fill="white" fill-opacity="0.5"/>
+<circle opacity="0.4" cx="208.774" cy="15.8092" r="1.01115" transform="rotate(180 208.774 15.8092)" fill="white" fill-opacity="0.5"/>
+<circle opacity="0.4" cx="146.081" cy="58.7857" r="1.01115" transform="rotate(180 146.081 58.7857)" fill="white" fill-opacity="0.8"/>
+<circle opacity="0.4" cx="192.086" cy="12.7779" r="1.01115" transform="rotate(180 192.086 12.7779)" fill="white" fill-opacity="0.5"/>
+<circle opacity="0.4" cx="131.419" cy="27.4381" r="1.01115" transform="rotate(180 131.419 27.4381)" fill="white" fill-opacity="0.5"/>
+<circle opacity="0.4" cx="148.753" cy="113.997" r="1.01115" transform="rotate(-180 148.753 113.997)" fill="white" fill-opacity="0.8"/>
+<circle opacity="0.4" cx="150.823" cy="84.0514" r="1.01115" transform="rotate(-180 150.823 84.0514)" fill="white" fill-opacity="0.7"/>
+<circle opacity="0.4" cx="281.216" cy="77.0893" r="1.01115" fill="white" fill-opacity="0.8"/>
+<circle opacity="0.4" cx="235.211" cy="123.097" r="1.01115" fill="white" fill-opacity="0.7"/>
+<circle opacity="0.4" cx="295.882" cy="108.437" r="1.01115" fill="white" fill-opacity="0.5"/>
+    </svg>
+  </div>
+
+  <!-- white silhouette: bar + notch under one shadow -->
+  <div class="fa-header__shape" aria-hidden="true">
+    <div class="fa-header__bar"></div>
+    <div class="fa-header__notch">
+      <svg viewBox="129.499 63.7988 132 42.9006" xmlns="http://www.w3.org/2000/svg">
+        <path d="M129.499 63.7988C146.51 63.7988 158.112 79.122 167.491 93.3126C174.724 104.254 185.911 106.827 193.849 106.699C201.926 106.569 210.817 104.672 217.247 97.1036C229.833 82.2878 242.059 63.7988 261.499 63.7988Z" fill="#fff"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- controls -->
+  <div class="fa-header__content">
+
+    <div class="fa-header__left">
+      <button class="fa-avatar" type="button" aria-label="החשבון שלי"><span class="fa-avatar__txt">AG</span></button>
+
+      <a class="fa-points" href="#points">
+        <span class="fa-sr">יתרת הנקודות שלי:</span>
+        <span class="fa-points__value">500</span>
+        <svg class="fa-points__coins" viewBox="86.625 25.125 18.75 13.75" aria-hidden="true"
+             xmlns="http://www.w3.org/2000/svg"><path d="M100.375 28.9977V28.5625C100.375 26.6031 97.4195 25.125 93.5 25.125C89.5805 25.125 86.625 26.6031 86.625 28.5625V31.6875C86.625 33.3195 88.6758 34.6164 91.625 35.0047V35.4375C91.625 37.3969 94.5805 38.875 98.5 38.875C102.42 38.875 105.375 37.3969 105.375 35.4375V32.3125C105.375 30.6953 103.389 29.3969 100.375 28.9977ZM104.125 32.3125C104.125 33.3453 101.72 34.5 98.5 34.5C98.2086 34.5 97.9195 34.4898 97.6344 34.4711C99.3195 33.857 100.375 32.8594 100.375 31.6875V30.2609C102.709 30.6086 104.125 31.5523 104.125 32.3125ZM91.625 33.7383V31.8797C92.2467 31.9607 92.873 32.0009 93.5 32C94.127 32.0009 94.7533 31.9607 95.375 31.8797V33.7383C94.7542 33.83 94.1275 33.8757 93.5 33.875C92.8725 33.8757 92.2458 33.83 91.625 33.7383ZM99.125 30.5883V31.6875C99.125 32.343 98.1555 33.0469 96.625 33.4742V31.6484C97.6336 31.4039 98.4875 31.0398 99.125 30.5883ZM93.5 26.375C96.7195 26.375 99.125 27.5297 99.125 28.5625C99.125 29.5953 96.7195 30.75 93.5 30.75C90.2805 30.75 87.875 29.5953 87.875 28.5625C87.875 27.5297 90.2805 26.375 93.5 26.375ZM87.875 31.6875V30.5883C88.5125 31.0398 89.3664 31.4039 90.375 31.6484V33.4742C88.8445 33.0469 87.875 32.343 87.875 31.6875ZM92.875 35.4375V35.1117C93.0805 35.1195 93.2883 35.125 93.5 35.125C93.8031 35.125 94.0992 35.1148 94.3898 35.0977C94.7127 35.2132 95.0416 35.3113 95.375 35.3914V37.2242C93.8445 36.7969 92.875 36.093 92.875 35.4375ZM96.625 37.4883V35.625C97.2465 35.7085 97.8729 35.7503 98.5 35.75C99.127 35.7509 99.7533 35.7107 100.375 35.6297V37.4883C99.1316 37.6706 97.8684 37.6706 96.625 37.4883ZM101.625 37.2242V35.3984C102.634 35.1539 103.488 34.7898 104.125 34.3383V35.4375C104.125 36.093 103.155 36.7969 101.625 37.2242Z"/></svg>
+      </a>
+    </div>
+
+    <a class="fa-logo" href="#home" aria-label="FlyAll">
+      <svg viewBox="154.555 18.998 88.889 26.009" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="faLogoGrad" x1="160.842" y1="42.732" x2="176.749" y2="20.8419"
+                          gradientUnits="userSpaceOnUse">
+            <stop stop-color="#1B5ECE"/><stop offset="0.11" stop-color="#2F5AD3"/>
+            <stop offset="0.34" stop-color="#644FE0"/><stop offset="0.47" stop-color="#8749EA"/>
+            <stop offset="0.78" stop-color="#CA41E6"/><stop offset="1" stop-color="#FF3CE3"/>
+          </linearGradient>
+        </defs>
+        <path d="M166.969 32.2799H163.768L166.836 37.9317H166.201C165.851 37.9317 165.519 37.7754 165.296 37.5066L161.263 32.6417C161.073 32.413 160.791 32.2812 160.494 32.2812H159.332C158.876 32.2812 158.505 31.9117 158.505 31.4543C158.505 30.9968 158.875 30.6273 159.332 30.6273H160.494C160.791 30.6273 161.073 30.4955 161.263 30.2668L165.296 25.4019C165.519 25.1318 165.851 24.9768 166.201 24.9768H166.836L163.768 30.6286H166.969C172.951 30.6286 177.802 25.7779 177.802 19.7953C177.802 19.3547 177.446 18.998 177.005 18.998H167.013C160.132 18.998 154.555 24.5749 154.555 31.4555C154.555 38.3362 160.132 43.913 167.013 43.913H177.005C177.446 43.913 177.802 43.5564 177.802 43.1158C177.802 37.1332 172.951 32.2825 166.969 32.2825" fill="url(#faLogoGrad)"/>
+<path d="M191.09 23.4069H186.243C184.813 23.3591 183.339 23.9741 182.205 25.097C180.94 26.3478 180.264 28.0198 180.303 29.8004V38.4422C180.303 38.9991 180.757 39.4527 181.313 39.4527H183.241C183.798 39.4527 184.252 38.9991 184.252 38.4422V34.3952C184.252 34.2983 184.331 34.2182 184.429 34.2182H190.449C191.006 34.2182 191.459 33.7647 191.459 33.2078V31.5551C191.459 30.9982 191.006 30.5447 190.449 30.5447L184.252 30.5472V30.1208L184.248 30.0769C184.208 29.812 184.125 28.8856 184.736 28.087C185.638 26.9086 187.215 27.0985 187.23 27.1011L191.09 27.1037C191.585 27.1037 191.986 26.7018 191.986 26.207V24.3049C191.986 23.81 191.585 23.4082 191.09 23.4082V23.4069Z" fill="var(--fa-ink)"/>
+<path d="M197.445 23.4043H195.609C195.051 23.4043 194.598 23.8567 194.598 24.4147V38.428C194.598 38.986 195.051 39.4384 195.609 39.4384H197.445C198.003 39.4384 198.455 38.986 198.455 38.428V24.4147C198.455 23.8567 198.003 23.4043 197.445 23.4043Z" fill="var(--fa-ink)"/>
+<path d="M212.872 27.4915H210.36C209.976 27.4915 209.665 27.8042 209.665 28.1867V33.3669C209.665 34.8192 208.688 35.9137 207.393 35.9137C206.013 35.9137 205.19 34.9872 205.19 33.4354V28.1854C205.19 27.8016 204.877 27.4902 204.495 27.4902H202.075C201.691 27.4902 201.38 27.8029 201.38 28.1854V33.5504C201.38 37.3867 203.421 39.5872 206.981 39.5872C208.09 39.5872 209.011 39.2758 209.691 38.6801C209.533 40.4077 208.528 41.4234 206.936 41.4234C206.137 41.4234 205.43 41.1753 204.893 40.7075C204.656 40.5021 204.314 40.4685 204.039 40.6261L202.051 41.7619C201.858 41.873 201.725 42.063 201.686 42.2826C201.648 42.4997 201.708 42.7194 201.85 42.8874C203.033 44.2738 204.808 45.0065 206.981 45.0065C210.922 45.0065 213.568 42.2477 213.568 38.1426V28.188C213.568 27.8042 213.256 27.4928 212.873 27.4928L212.872 27.4915Z" fill="var(--fa-ink)"/>
+<path d="M226.972 25.7794C226.45 24.1216 225.048 23.0918 223.313 23.0918C221.578 23.0918 220.199 24.1216 219.677 25.7794L215.749 38.5341C215.683 38.7473 215.722 38.9722 215.854 39.1518C215.987 39.3314 216.19 39.4348 216.413 39.4348H218.996C219.305 39.4348 219.58 39.2267 219.665 38.9295L220.417 36.2897L226.232 36.2677L226.984 38.9282C227.068 39.2267 227.343 39.4348 227.653 39.4348H230.235C230.459 39.4348 230.663 39.3314 230.795 39.1518C230.928 38.9722 230.965 38.7473 230.899 38.5341L226.971 25.7794H226.972ZM225.189 32.6859H221.46L223.118 26.9385C223.188 26.6956 223.263 26.6956 223.335 26.6956C223.431 26.6956 223.484 26.6956 223.552 26.9372L225.188 32.6846L225.189 32.6859Z" fill="var(--fa-ink)"/>
+<path d="M233.876 23.4043H235.712C236.271 23.4043 236.723 23.8565 236.723 24.4147V38.428C236.723 38.9862 236.271 39.4384 235.712 39.4384H233.876C233.319 39.4384 232.866 38.9862 232.866 38.428V24.4147C232.866 23.8578 233.318 23.4043 233.876 23.4043Z" fill="var(--fa-ink)"/>
+<path d="M240.597 23.4043H242.433C242.991 23.4043 243.444 23.8565 243.444 24.4147V38.428C243.444 38.9862 242.991 39.4384 242.433 39.4384H240.597C240.04 39.4384 239.587 38.9862 239.587 38.428V24.4147C239.587 23.8578 240.039 23.4043 240.597 23.4043Z" fill="var(--fa-ink)"/>
+      </svg>
+    </a>
+
+    <button class="fa-menu" type="button" aria-label="תפריט" aria-expanded="false">
+      <svg viewBox="0 0 24 17.5" xmlns="http://www.w3.org/2000/svg"
+           stroke="var(--fa-ink)" stroke-width="1.5" stroke-linecap="round">
+        <line x1="0.75" y1="0.75" x2="23.25" y2="0.75"/>
+        <line x1="0.75" y1="8.75" x2="23.25" y2="8.75"/>
+        <line x1="0.75" y1="16.75" x2="23.25" y2="16.75"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- SOL -->
+  <div class="fa-header__notch fa-header__notch--orb">
+    <button class="fa-orb" type="button" aria-label="SOL"></button>
+  </div>
+
+</header>
+
+<main>
+
+<section class="hero" id="hero">
+  <div class="orb" aria-hidden="true"></div>
+
+  <h1 class="dream">
+    <span class="dream__l1"><span class="w">החלום שלך</span></span>
+    <span class="dream__l2"><span class="w">מתחיל</span></span>
+    <span class="dream__l3"><span class="w dream__em">כאן</span></span>
+  </h1>
+
+  <p class="hero__sub">כל מה שתמיד רצית להרגיש<br>נמצא במרחק נקודות</p>
+
+
+  <div class="cue" aria-hidden="true"><span>גללו</span><i></i></div>
+
+</section>
+
+
+<section class="cards" id="cards">
+  <div class="cards__grid">
+      <figure class="acard" style="--d:0.00s">
+        <div class="acard__tile">
+          <div class="acard__media" style="clip-path:url(#ac0)">
+            <video src="POV%20Videos/0_Concert_Crowd_720x1280.mp4" poster="assets/posters/0_Concert_Crowd_720x1280.jpg"
+                   loop muted playsinline preload="none"></video>
+            <i class="acard__wash"></i>
+          </div>
+          <figcaption class="acard__cap">הופעות</figcaption>
+        </div>
+      </figure>
+      <figure class="acard" style="--d:0.14s">
+        <div class="acard__tile">
+          <div class="acard__media" style="clip-path:url(#ac1)">
+            <video src="POV%20Videos/0_Festival_Music_Festival_720x1280.mp4" poster="assets/posters/0_Festival_Music_Festival_720x1280.jpg"
+                   loop muted playsinline preload="none"></video>
+            <i class="acard__wash"></i>
+          </div>
+          <figcaption class="acard__cap">פסטיבלים</figcaption>
+        </div>
+      </figure>
+      <figure class="acard" style="--d:0.28s">
+        <div class="acard__tile">
+          <div class="acard__media" style="clip-path:url(#ac2)">
+            <video src="POV%20Videos/0_Skier_Skiing_720x1280.mp4" poster="assets/posters/0_Skier_Skiing_720x1280.jpg"
+                   loop muted playsinline preload="none"></video>
+            <i class="acard__wash"></i>
+          </div>
+          <figcaption class="acard__cap">סקי</figcaption>
+        </div>
+      </figure>
+      <figure class="acard" style="--d:0.42s">
+        <div class="acard__tile">
+          <div class="acard__media" style="clip-path:url(#ac3)">
+            <video src="POV%20Videos/0_Football_Stadium_720x1280.mp4" poster="assets/posters/0_Football_Stadium_720x1280.jpg"
+                   loop muted playsinline preload="none"></video>
+            <i class="acard__wash"></i>
+          </div>
+          <figcaption class="acard__cap">ספורט</figcaption>
+        </div>
+      </figure>
+  </div>
+</section>
+
+<section class="how" id="how">
+  <ol class="how__track" id="howTrack">
+
+    <li class="step">
+      <div class="step__body">
+        <h2 class="step__title" data-in>בוחרים חלום ומשריינים</h2>
+        <p class="step__lead" data-in>חופשה, הופעה או משחק שתמיד רציתם!<br>בוחרים מועד ומשריינים במקדמה</p>
+        <div class="step__art" data-in>
+          <img src="Dream/animation/01_ball_glasses_microphone.webp"
+               width="640" height="640"
+               alt="איור: בחירת חלום ושריון מועד" decoding="async">
+        </div>
+        <p class="step__note" data-in><b>20% מקדמה</b>מהסכום הסופי, והחלום שמור לכם למועד שבחרתם</p>
+      </div>
+    </li>
+
+    <li class="step">
+      <div class="step__body">
+        <h2 class="step__title" data-in>צוברים נקודות עד לחלום</h2>
+        <p class="step__lead" data-in>משתמשים בכרטיס אשראי FlyAll וצוברים נקודות עד המועד שנקבע</p>
+        <div class="step__art" data-in>
+          <img src="Dream/animation/02_coins_horizontal_stacks.webp"
+               width="476" height="640"
+               alt="איור: צבירת נקודות בכרטיס FlyAll" decoding="async" loading="lazy">
+        </div>
+        <p class="step__note" data-in><b>1 נקודה = ₪1</b>ככל שתצברו יותר נקודות ככה תשלמו פחות בסוף</p>
+      </div>
+    </li>
+
+    <li class="step">
+      <div class="step__body">
+        <h2 class="step__title" data-in>משלימים את היתרה ומגשימים</h2>
+        <p class="step__lead" data-in>משלימים את היתרה בנקודות, בכסף או גם וגם, ויוצאים להגשים את החלום</p>
+        <div class="step__art" data-in>
+          <img src="Dream/animation/03_airplane_moving_clouds.webp"
+               width="640" height="395"
+               alt="איור: השלמת התשלום ויציאה לדרך" decoding="async" loading="lazy">
+        </div>
+        <p class="step__note" data-in><b>עד חודשיים לפני המועד</b>מסיימים את התשלום ויוצאים לדרך</p>
+      </div>
+    </li>
+
+  </ol>
+
+  <div class="how__dots" id="howDots" data-in role="tablist" aria-label="שלבים"></div>
+</section>
+
+<section class="perks" id="perks">
+
+  <h2 class="perks__say">עם הנקודות שלך, <b>גם הדרך</b> הופכת לחוויה.</h2>
+
+  <div class="perks__grid">
+
+    <figure class="pk" style="--d:0s">
+      <div class="pk__media">
+        <video src="assets/perks/vip-transfer.mp4" loop muted playsinline
+               preload="none" aria-hidden="true"></video>
+        <i class="pk__wash"></i>
+      </div>
+      <figcaption>
+        <h3 class="pk__title">העברה VIP</h3>
+        <p class="pk__sub">₪390 או 390 נק׳</p>
+      </figcaption>
+    </figure>
+
+    <figure class="pk" style="--d:.14s">
+      <div class="pk__media">
+        <video src="assets/perks/premium-lounge.mp4" loop muted playsinline
+               preload="none" aria-hidden="true"></video>
+        <i class="pk__wash"></i>
+      </div>
+      <figcaption>
+        <h3 class="pk__title">טרקלין Premium</h3>
+        <p class="pk__sub">₪180 או 180 נק׳</p>
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+</main>
+
+<footer class="foot" id="foot">
+
+  <div class="foot__brand foot__in" style="--d:0s">
+    <svg viewBox="154.555 18.998 88.889 26.009" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+    <linearGradient id="faFootGrad" x1="160.842" y1="42.732" x2="176.749" y2="20.8419"
+    gradientUnits="userSpaceOnUse">
+    <stop stop-color="#1B5ECE"/><stop offset="0.11" stop-color="#2F5AD3"/>
+    <stop offset="0.34" stop-color="#644FE0"/><stop offset="0.47" stop-color="#8749EA"/>
+    <stop offset="0.78" stop-color="#CA41E6"/><stop offset="1" stop-color="#FF3CE3"/>
+    </linearGradient>
+    </defs>
+    <path d="M166.969 32.2799H163.768L166.836 37.9317H166.201C165.851 37.9317 165.519 37.7754 165.296 37.5066L161.263 32.6417C161.073 32.413 160.791 32.2812 160.494 32.2812H159.332C158.876 32.2812 158.505 31.9117 158.505 31.4543C158.505 30.9968 158.875 30.6273 159.332 30.6273H160.494C160.791 30.6273 161.073 30.4955 161.263 30.2668L165.296 25.4019C165.519 25.1318 165.851 24.9768 166.201 24.9768H166.836L163.768 30.6286H166.969C172.951 30.6286 177.802 25.7779 177.802 19.7953C177.802 19.3547 177.446 18.998 177.005 18.998H167.013C160.132 18.998 154.555 24.5749 154.555 31.4555C154.555 38.3362 160.132 43.913 167.013 43.913H177.005C177.446 43.913 177.802 43.5564 177.802 43.1158C177.802 37.1332 172.951 32.2825 166.969 32.2825" fill="url(#faFootGrad)"/>
+    <path d="M191.09 23.4069H186.243C184.813 23.3591 183.339 23.9741 182.205 25.097C180.94 26.3478 180.264 28.0198 180.303 29.8004V38.4422C180.303 38.9991 180.757 39.4527 181.313 39.4527H183.241C183.798 39.4527 184.252 38.9991 184.252 38.4422V34.3952C184.252 34.2983 184.331 34.2182 184.429 34.2182H190.449C191.006 34.2182 191.459 33.7647 191.459 33.2078V31.5551C191.459 30.9982 191.006 30.5447 190.449 30.5447L184.252 30.5472V30.1208L184.248 30.0769C184.208 29.812 184.125 28.8856 184.736 28.087C185.638 26.9086 187.215 27.0985 187.23 27.1011L191.09 27.1037C191.585 27.1037 191.986 26.7018 191.986 26.207V24.3049C191.986 23.81 191.585 23.4082 191.09 23.4082V23.4069Z" fill="var(--fa-ink)"/>
+    <path d="M197.445 23.4043H195.609C195.051 23.4043 194.598 23.8567 194.598 24.4147V38.428C194.598 38.986 195.051 39.4384 195.609 39.4384H197.445C198.003 39.4384 198.455 38.986 198.455 38.428V24.4147C198.455 23.8567 198.003 23.4043 197.445 23.4043Z" fill="var(--fa-ink)"/>
+    <path d="M212.872 27.4915H210.36C209.976 27.4915 209.665 27.8042 209.665 28.1867V33.3669C209.665 34.8192 208.688 35.9137 207.393 35.9137C206.013 35.9137 205.19 34.9872 205.19 33.4354V28.1854C205.19 27.8016 204.877 27.4902 204.495 27.4902H202.075C201.691 27.4902 201.38 27.8029 201.38 28.1854V33.5504C201.38 37.3867 203.421 39.5872 206.981 39.5872C208.09 39.5872 209.011 39.2758 209.691 38.6801C209.533 40.4077 208.528 41.4234 206.936 41.4234C206.137 41.4234 205.43 41.1753 204.893 40.7075C204.656 40.5021 204.314 40.4685 204.039 40.6261L202.051 41.7619C201.858 41.873 201.725 42.063 201.686 42.2826C201.648 42.4997 201.708 42.7194 201.85 42.8874C203.033 44.2738 204.808 45.0065 206.981 45.0065C210.922 45.0065 213.568 42.2477 213.568 38.1426V28.188C213.568 27.8042 213.256 27.4928 212.873 27.4928L212.872 27.4915Z" fill="var(--fa-ink)"/>
+    <path d="M226.972 25.7794C226.45 24.1216 225.048 23.0918 223.313 23.0918C221.578 23.0918 220.199 24.1216 219.677 25.7794L215.749 38.5341C215.683 38.7473 215.722 38.9722 215.854 39.1518C215.987 39.3314 216.19 39.4348 216.413 39.4348H218.996C219.305 39.4348 219.58 39.2267 219.665 38.9295L220.417 36.2897L226.232 36.2677L226.984 38.9282C227.068 39.2267 227.343 39.4348 227.653 39.4348H230.235C230.459 39.4348 230.663 39.3314 230.795 39.1518C230.928 38.9722 230.965 38.7473 230.899 38.5341L226.971 25.7794H226.972ZM225.189 32.6859H221.46L223.118 26.9385C223.188 26.6956 223.263 26.6956 223.335 26.6956C223.431 26.6956 223.484 26.6956 223.552 26.9372L225.188 32.6846L225.189 32.6859Z" fill="var(--fa-ink)"/>
+    <path d="M233.876 23.4043H235.712C236.271 23.4043 236.723 23.8565 236.723 24.4147V38.428C236.723 38.9862 236.271 39.4384 235.712 39.4384H233.876C233.319 39.4384 232.866 38.9862 232.866 38.428V24.4147C232.866 23.8578 233.318 23.4043 233.876 23.4043Z" fill="var(--fa-ink)"/>
+    <path d="M240.597 23.4043H242.433C242.991 23.4043 243.444 23.8565 243.444 24.4147V38.428C243.444 38.9862 242.991 39.4384 242.433 39.4384H240.597C240.04 39.4384 239.587 38.9862 239.587 38.428V24.4147C239.587 23.8578 240.039 23.4043 240.597 23.4043Z" fill="var(--fa-ink)"/>
+    </svg>
+    <p>החלומות שלך,<br>בנקודות שלך.</p>
+  </div>
+
+  <div class="foot__cols foot__in" style="--d:.13s">
+      <div>
+        <h4>חוויות</h4>
+        <a href="#">ספורט</a>
+        <a href="#">הופעות</a>
+        <a href="#">סקי</a>
+        <a href="#">פסטיבלים</a>
+      </div>
+      <div>
+        <h4>המועדון</h4>
+        <a href="#">הנקודות שלי</a>
+        <a href="#">איך צוברים</a>
+        <a href="#">ההזמנות שלי</a>
+        <a href="#">כרטיס FlyAll</a>
+      </div>
+      <div>
+        <h4>שירות</h4>
+        <a href="#">שאלות נפוצות</a>
+        <a href="#">יצירת קשר</a>
+        <a href="#">מדיניות ביטולים</a>
+        <a href="#">נגישות</a>
+      </div>
+  </div>
+
+  <div class="foot__social foot__in" style="--d:.26s">
+      <a href="#" aria-label="Instagram"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5.2"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1.15" fill="currentColor" stroke="none"/></svg></a>
+      <a href="#" aria-label="Facebook"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" stroke="none" d="M13.6 21v-7.3h2.5l.4-2.9h-2.9V9c0-.85.24-1.42 1.45-1.42h1.55V4.99c-.27-.04-1.19-.12-2.26-.12-2.24 0-3.77 1.37-3.77 3.87v2.06H8v2.9h2.57V21h3.03z"/></svg></a>
+      <a href="#" aria-label="TikTok"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" stroke="none" d="M16.6 3h-2.72v11.63a2.06 2.06 0 1 1-1.72-2.03V9.85a4.9 4.9 0 1 0 4.44 4.88V9.2a5.8 5.8 0 0 0 3.4 1.09V7.58A3.4 3.4 0 0 1 16.6 4.2V3z"/></svg></a>
+      <a href="#" aria-label="YouTube"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path fill="currentColor" stroke="none" d="M21.6 8.2a2.5 2.5 0 0 0-1.74-1.78C18.29 6 12 6 12 6s-6.29 0-7.86.42A2.5 2.5 0 0 0 2.4 8.2 26.3 26.3 0 0 0 2 12a26.3 26.3 0 0 0 .4 3.8 2.5 2.5 0 0 0 1.74 1.78C5.71 18 12 18 12 18s6.29 0 7.86-.42a2.5 2.5 0 0 0 1.74-1.78A26.3 26.3 0 0 0 22 12a26.3 26.3 0 0 0-.4-3.8zM10 15.1V8.9l5.2 3.1-5.2 3.1z"/></svg></a>
+  </div>
+
+  <div class="foot__rule foot__in" style="--d:.33s"></div>
+
+  <div class="foot__legal foot__in" style="--d:.39s">
+    <nav>
+      <a href="#">תנאי שימוש</a>
+      <a href="#">מדיניות פרטיות</a>
+      <a href="#">הצהרת נגישות</a>
+    </nav>
+    <small>© 2026 FlyAll. כל הזכויות שמורות. מימוש נקודות בכפוף לתקנון המועדון ולזמינות המלאי. התמונות והסרטונים להמחשה בלבד.</small>
+  </div>
+
+</footer>
+
+<!-- ============================================================
+     THE INNER CATEGORY PAGE — one view, filled on demand.
+     ============================================================ -->
+<section class="cat" id="cat" aria-hidden="true" aria-label="עמוד קטגוריה">
+  <div class="cat__wrap">
+    <button class="cat__back" type="button" id="catBack">
+      <svg viewBox="0 0 16 16"><path d="M6 3l5 5-5 5"/></svg>
+      <span>לכל החוויות</span>
+    </button>
+    <h1 class="cat__title" id="catTitle"></h1>
+    <p class="cat__lead" id="catLead"></p>
+    <p class="cat__count" id="catCount"></p>
+    <ul class="cat__list" id="catList"></ul>
+  </div>
+</section>
+
+<button class="replay" type="button" id="replay">הצג שוב</button>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="star" viewBox="0 0 24 24">
+    <path d="M12 0c.5 6.6 4.9 11 11.5 12C16.9 13 12.5 17.4 12 24c-.5-6.6-4.9-11-11.5-12C7.1 11 11.5 6.6 12 0Z"/>
+  </symbol>
+</svg>
+
+<script>
+(function(){
+  var K = Math.min(8, Math.max(.25,
+            parseFloat(new URLSearchParams(location.search).get('slow')) || 1));
+  document.documentElement.style.setProperty('--k', K);
+
+  /* sparkles, in the same four-point style as the illustrations */
+  var SPARKS = [
+    /* y is a % of the hero, and the orb's lowest point is at 55% — so the
+       first four land ON it and read as white, and the last two land on
+       the paper below it and take their colour from the palette */
+    {x:14, y:24, s:20, d:0,   p:4.2, c:'#FFFFFF'},
+    {x:82, y:19, s:15, d:.35, p:5.1, c:'#FFFFFF'},
+    {x:70, y:33, s:11, d:.7,  p:3.8, c:'#FFFFFF'},
+    {x:46, y:14, s:10, d:1.1, p:4.0, c:'#FFFFFF'},
+    {x:24, y:62, s:13, d:.5,  p:4.6, c:'#8A4BF3'},
+    {x:88, y:66, s:18, d:.9,  p:5.4, c:'#FC3DE0'}
+  ];
+  SPARKS.forEach(function(s){
+    var el = document.createElement('div');
+    el.className = 'spark';
+    el.setAttribute('aria-hidden','true');
+    el.style.cssText = '--sx:' + s.x + 'vw;--sy:' + s.y + 'svh;--sz:' + s.s
+                     + 'px;--sd:' + s.d + 's;--sp:' + s.p + 's';
+    el.innerHTML = '<svg fill="' + s.c + '"><use href="#star"/></svg>';
+    document.getElementById('hero').appendChild(el);
+  });
+
+  /* ----------------------------------------------------------
+     SECTION 3 — the pager under the swiped parts. It reads the open part
+     off the rectangles rather than off scrollLeft: the document is RTL,
+     and scrollLeft counts backwards there, differently per engine.
+     ---------------------------------------------------------- */
+  var howTrack = document.getElementById('howTrack');
+  var howDots  = document.getElementById('howDots');
+  if(howTrack && howDots){
+    var howSteps = [].slice.call(howTrack.children);
+    var atStep = -1;
+
+    howSteps.forEach(function(st, i){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-label', 'שלב ' + (i + 1) + ' מתוך ' + howSteps.length);
+      b.addEventListener('click', function(){
+        /* 'nearest' on the block axis, or moving sideways drags the page
+           up and down with it */
+        st.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
+      });
+      howDots.appendChild(b);
+    });
+
+    var markStep = function(){
+      var tr = howTrack.getBoundingClientRect();
+      var mid = tr.left + tr.width / 2;
+      var best = 0, dist = Infinity;
+      howSteps.forEach(function(st, i){
+        var r = st.getBoundingClientRect();
+        var d = Math.abs(r.left + r.width / 2 - mid);
+        if(d < dist){ dist = d; best = i; }
+      });
+      if(best === atStep) return;
+      atStep = best;
+      [].forEach.call(howDots.children, function(b, i){
+        b.classList.toggle('on', i === best);
+        b.setAttribute('aria-selected', i === best ? 'true' : 'false');
+      });
+    };
+
+    var howEl = document.getElementById('how');
+    if(howEl && 'IntersectionObserver' in self){
+      new IntersectionObserver(function(es){
+        es.forEach(function(e){ if(e.isIntersecting) howEl.classList.add('is-live'); });
+      }, {threshold: .2}).observe(howEl);
+    } else if(howEl){
+      howEl.classList.add('is-live');
+    }
+
+    var stepQueued = false;
+    howTrack.addEventListener('scroll', function(){
+      if(stepQueued) return;
+      stepQueued = true;
+      requestAnimationFrame(function(){ stepQueued = false; markStep(); });
+    }, {passive: true});
+    addEventListener('resize', markStep);
+    markStep();
+  }
+
+  /* ----------------------------------------------------------
+     SECTION 2 — the attraction cards. The whole set is armed once, then
+     the cards cascade on their own CSS delays, so they arrive one after
+     another rather than two at a time per row. The clips only decode
+     while the section is on screen.
+     ---------------------------------------------------------- */
+  var cardsEl = document.getElementById('cards');
+  if(cardsEl && 'IntersectionObserver' in self){
+    var clips = [].slice.call(cardsEl.querySelectorAll('video'));
+    var cardsOn = false;
+
+    /* A play() call can be refused while the tab is still hidden or the
+       clip has not decoded a frame yet, so every wake retries the ones
+       that are still parked rather than assuming the first call took. */
+    var wake = function(){
+      if(!cardsOn) return;
+      clips.forEach(function(v){
+        v.preload = 'auto';
+        if(v.paused) v.play().catch(function(){});
+      });
+    };
+    clips.forEach(function(v){ v.addEventListener('canplay', wake); });
+    document.addEventListener('visibilitychange', function(){
+      if(!document.hidden) wake();
+    });
+
+    new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        cardsOn = e.isIntersecting;
+        if(cardsOn){ cardsEl.classList.add('is-live'); wake(); }
+        else clips.forEach(function(v){ v.pause(); });
+      });
+    }, {threshold: .25}).observe(cardsEl);
+  } else if(cardsEl){
+    cardsEl.classList.add('is-live');
+  }
+
+  /* ----------------------------------------------------------
+     SECTION 4 — the perks. Same arrival as the cards above.
+     ---------------------------------------------------------- */
+  var perksEl = document.getElementById('perks');
+  if(perksEl && 'IntersectionObserver' in self){
+    var pkClips = [].slice.call(perksEl.querySelectorAll('video'));
+    var pkWake = function(){
+      pkClips.forEach(function(v){
+        v.preload = 'auto';
+        if(v.paused) v.play().catch(function(){});
+      });
+    };
+    pkClips.forEach(function(v){ v.addEventListener('canplay', pkWake); });
+    document.addEventListener('visibilitychange', function(){
+      if(!document.hidden && perksEl.classList.contains('is-live')) pkWake();
+    });
+    new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(e.isIntersecting){ perksEl.classList.add('is-live'); pkWake(); }
+        else pkClips.forEach(function(v){ v.pause(); });
+      });
+    }, {threshold: .2}).observe(perksEl);
+  } else if(perksEl){
+    perksEl.classList.add('is-live');
+  }
+
+  /* ----------------------------------------------------------
+     SECTION 5 — the footer arrives once, a beat at a time.
+     ---------------------------------------------------------- */
+  var footEl = document.getElementById('foot');
+  if(footEl && 'IntersectionObserver' in self){
+    var footIO = new IntersectionObserver(function(es){
+      if(es[0].isIntersecting){
+        footEl.classList.add('is-live');
+        footIO.disconnect();
+      }
+    }, {threshold: .12});
+    footIO.observe(footEl);
+  } else if(footEl){
+    footEl.classList.add('is-live');
+  }
+
+  /* ----------------------------------------------------------
+     SECTION 3 — the process.
+
+     Nothing is pinned: each piece reads its own progress off where it
+     sits in the viewport, so the rule between two parts draws as it
+     climbs and the part behind it surfaces a beat later.
+     ---------------------------------------------------------- */
+  var hero  = document.getElementById('hero');
+  var lines = [].slice.call(document.querySelectorAll('[data-line]'));
+  var items = [].slice.call(document.querySelectorAll('[data-in]'));
+
+  var clamp01 = function(v){ return v < 0 ? 0 : v > 1 ? 1 : v; };
+  var easeOut = function(t){ var u = 1 - t; return 1 - u * u * u; };
+
+  function paint(){
+    var vh = innerHeight;
+
+    /* the rule draws from its own top as it passes the read line */
+    lines.forEach(function(l){
+      var r = l.getBoundingClientRect();
+      l.style.setProperty('--p',
+        clamp01((vh * .80 - r.top) / Math.max(1, r.height)).toFixed(3));
+    });
+
+    /* each piece of a part follows a beat behind the one above it */
+    items.forEach(function(el, i){
+      var r = el.getBoundingClientRect();
+      el.style.setProperty('--p',
+        easeOut(clamp01((vh * .86 - r.top) / (vh * .20))).toFixed(3));
+    });
+
+    document.body.classList.toggle('scrolled', scrollY > 24);
+  }
+
+  var queued = false;
+  function onScroll(){
+    if(queued) return;
+    queued = true;
+    requestAnimationFrame(function(){ queued = false; paint(); });
+  }
+  addEventListener('scroll', onScroll, {passive: true});
+  addEventListener('resize', onScroll);
+  paint();
+
+  /* ---- run it ---------------------------------------------- */
+  var HOLD = 300 * K;                   /* the held breath before the parting */
+  var slow = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var settleTimer;
+
+  var root = document.documentElement;
+  root.classList.add('sealed');
+  if('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  scrollTo(0, 0);
+
+  function open(){
+    clearTimeout(settleTimer);
+    document.body.classList.add('parted');
+    settleTimer = setTimeout(function(){
+      document.body.classList.add('settled');
+      root.classList.remove('sealed');   /* the page opens up once the sky is clear */
+      paint();
+    }, slow ? 400 : HOLD + 1900 * K);
+  }
+
+  function reset(){
+    clearTimeout(settleTimer);
+    scrollTo(0, 0);
+    root.classList.add('sealed');
+    var b = document.body;
+    b.classList.add('rewind');
+    b.classList.remove('parted','settled');
+    void b.offsetWidth;              /* commit the sealed state with no transition */
+    b.classList.remove('rewind');
+    void b.offsetWidth;              /* ...then let the transitions back in */
+  }
+
+  /* nothing to preload any more — the hero is type and one painted
+     sphere, so the cascade starts as soon as layout has resolved */
+  var started = false;
+  function start(){
+    if(started) return;
+    started = true;
+    setTimeout(open, slow ? 0 : HOLD);
+  }
+  requestAnimationFrame(start);
+  /* rAF never fires in a background tab, and a hero that stays blank until
+     the tab is focused is the worst failure this page has — so it also
+     opens on a timer. start() only runs once either way. */
+  setTimeout(start, 500);
+
+
+  /* ==========================================================
+     THE INNER CATEGORY PAGE
+
+     One view, reused by all four cards. It opens over the home
+     page rather than replacing it, so the scroll position behind
+     it survives — and it is addressable, so a category can be
+     linked to directly and the back button closes it.
+     ========================================================== */
+  var CATS = {
+    'shows': {
+      name: 'הופעות', em: 'בשבילך',
+      lead: 'ההופעות הגדולות של 2027, בערים שאליהן טסים במיוחד.',
+      events: [
+        {t:'Céline Dion — La Défense Arena', w:'8–29 במאי 2027', pl:'פריז, צרפת',
+         pts:'6,800', v:'0_Concert_Crowd_720x1280',
+         b:'עשרה מופעים באולם הגדול באירופה. בוחרים תאריך מתוך הסדרה, והחבילה כוללת שתי לינות בפריז והסעה לאולם וחזרה.'},
+        {t:'Oasis Live ’27', w:'מאי–ספטמבר 2027', pl:'אירופה, לפי תחנות הטור',
+         pts:'5,400', v:'0_Musician_Playing_Guitar_720x1280',
+         b:'הטור שכולם חיכו לו, בתחנה שתבחרו. משריינים עכשיו לפי עיר, ומעדכנים תאריך מדויק ברגע שהוא מתפרסם.'}
+      ]
+    },
+    'festivals': {
+      name: 'פסטיבלים', em: 'בשבילך',
+      lead: 'שלושה ימים, ארבעה ימים, שבוע — כל הפסטיבלים שאפשר לשריין מהיום.',
+      events: [
+        {t:'Tomorrowland Winter', w:'20–27 במרץ 2027', pl:'אלף ד׳ואז, צרפת',
+         pts:'11,900', v:'0_Atmosphere_Vibrant_720x1280',
+         b:'הגרסה החורפית, על מדרונות האלפים. החבילה כוללת שבעה לילות, סקיפס לכל השבוע וכניסה לכל ימי הפסטיבל.'},
+        {t:'Tomorrowland', w:'יולי 2027', pl:'בום, בלגיה',
+         pts:'11,600', v:'0_Energetic_Atmosphere_720x1280',
+         b:'שני סופי שבוע, והתאריכים המדויקים טרם פורסמו רשמית. שריון עכשיו נועל את המחיר, ובוחרים סוף שבוע כשהלוח ייסגר.'},
+        {t:'Primavera Sound', w:'יוני 2027', pl:'ברצלונה, ספרד',
+         pts:'9,400', v:'0_Festival_Music_Festival_720x1280',
+         b:'ארבעה ימים על קו החוף, עם מעל מאה הרכבים. החבילה כוללת כרטיס לכל הימים, טיסות והלינה לצידם.'},
+        {t:'Sziget Festival', w:'אוגוסט 2027', pl:'בודפשט, הונגריה',
+         pts:'8,100', v:'0_Concert_Music_Festival_720x1280',
+         b:'שישה ימים על אי הדנובה. כולל אוהל מוקם מראש באזור השקט וכרטיס תחבורה חופשי בעיר.'}
+      ]
+    },
+    'sport': {
+      name: 'ספורט', em: 'בשבילך',
+      lead: 'המשחקים שתמיד רצית לראות מהיציע, עם מושב שמור מראש.',
+      events: [
+        {t:'אל קלאסיקו — ריאל מדריד נגד ברצלונה', w:'9 במאי 2027', pl:'סנטיאגו ברנבאו, מדריד',
+         pts:'12,800', v:'0_Football_Stadium_720x1280',
+         b:'מושב בטבעת השנייה מאחורי השער. כולל סיור באצטדיון ביום המשחק וטיסות הלוך ושוב.'},
+        {t:'גמר ליגת האלופות', w:'5 ביוני 2027', pl:'אצטדיון מטרופוליטנו, מדריד',
+         pts:'16,400', v:'0_Football_Soccer_720x1280',
+         b:'המשחק האחד של העונה. החבילה נסגרת הרבה לפני שהגמר יודע מי משחק בו — משריינים מושב, לא קבוצה.'},
+        {t:'צ׳לסי נגד מנצ׳סטר סיטי', w:'23–26 באפריל 2027', pl:'סטמפורד ברידג׳, לונדון',
+         pts:'7,300', v:'0_Soccer_Football_720x1280',
+         b:'משחק הפסח של הליגה האנגלית, שתי שורות מהדשא. החבילה כוללת שלוש לינות במרכז לונדון וכרטיס למוזיאון המועדון.'}
+      ]
+    },
+    'ski': {
+      name: 'סקי', em: 'בשבילך',
+      lead: 'שבוע על המדרונות, משוריין מהיום ומשולם בנקודות עד לנסיעה.',
+      events: [
+        {t:'שבוע סקי בשאמוני', w:'ינואר 2027', pl:'שאמוני, צרפת',
+         pts:'10,500', v:'0_Skier_Skiing_720x1280',
+         b:'שבעה לילות במלון על המדרון, כולל סקיפס לכל השבוע, השכרת ציוד ושני שיעורים פרטיים.'},
+        {t:'סוף שבוע ארוך בזלדן', w:'פברואר 2027', pl:'זלדן, אוסטריה',
+         pts:'6,200', v:'0_Skier_Ski_Lift_720x1280',
+         b:'ארבעה ימים על הקרחון, במסלולים שפתוחים גם בסוף העונה. כולל הסעה משדה התעופה.'},
+        {t:'סקי ראשון — חבילת מתחילים', w:'לבחירתכם, כל העונה', pl:'בנסקו, בולגריה',
+         pts:'3,800', v:'1101137_Skis_Ski_Poles_720x1280',
+         b:'חמישה ימים עם קורס למתחילים בקבוצה קטנה, ציוד מלא וסקיפס. מתאים גם למי שמעולם לא עמד על מגלשיים.'}
+      ]
+    }
+  };
+
+  /* which card leads where — read off the caption, so the markup
+     above stays the single place the four names are written */
+  var CAT_BY_NAME = {'הופעות':'shows', 'פסטיבלים':'festivals', 'ספורט':'sport', 'סקי':'ski'};
+
+  var catEl    = document.getElementById('cat');
+  var catList  = document.getElementById('catList');
+  var catTitle = document.getElementById('catTitle');
+  var catLead  = document.getElementById('catLead');
+  var catCount = document.getElementById('catCount');
+
+  var CAT_SPARKS = [
+    {x:8,  y:16, s:16, d:0,   p:4.2},
+    {x:86, y:11, s:12, d:.35, p:5.1},
+    {x:72, y:44, s:10, d:.7,  p:3.8},
+    {x:14, y:63, s:14, d:.5,  p:4.6},
+    {x:90, y:78, s:11, d:.9,  p:5.4}
+  ];
+
+  function esc(t){
+    return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function evMarkup(e, i){
+    return '<li class="ev" style="--d:' + (i * .09).toFixed(2) + 's">'
+      + '<article class="ev__plate">'
+      +   '<div class="ev__media">'
+      +     '<video src="POV%20Videos/' + e.v + '.mp4" poster="assets/posters/' + e.v + '.jpg"'
+      +           ' loop muted playsinline preload="none" width="720" height="1280" aria-hidden="true"></video>'
+      +     '<i class="ev__wash"></i>'
+      +   '</div>'
+      +   '<div class="ev__head">'
+      +     '<h2 class="ev__title">' + esc(e.t) + '</h2>'
+      +     '<p class="ev__meta"><span>' + esc(e.w) + '</span><i></i><span>' + esc(e.pl) + '</span></p>'
+      +   '</div>'
+      +   '<div class="ev__more"><div class="ev__more-in">'
+      +     '<p class="ev__body">' + esc(e.b) + '</p>'
+      +     '<p class="ev__price"><b>' + esc(e.pts) + ' נקודות</b>'
+      +       '<span>או 20% מקדמה עכשיו, והיתרה עד למועד</span></p>'
+      +     '<a class="ev__buy" href="#">לרכישה</a>'
+      +   '</div></div>'
+      +   '<button class="ev__cta" type="button" aria-expanded="false">'
+      +     '<span class="ev__cta-label">להגשים את החלום!</span>'
+      +     '<svg viewBox="0 0 16 16"><path d="M3 6l5 5 5-5"/></svg>'
+      +   '</button>'
+      + '</article></li>';
+  }
+
+  var vio = null;                      /* one clip observer per rendered list */
+
+  function render(key){
+    var c = CATS[key];
+    if(!c) return false;
+
+    if(vio){ vio.disconnect(); vio = null; }
+
+    catTitle.innerHTML = esc(c.name) + ' <b>' + esc(c.em) + '</b>';
+    catLead.textContent = c.lead;
+    catCount.textContent = c.events.length + ' אירועים זמינים';
+    catList.innerHTML = c.events.map(evMarkup).join('');
+
+    /* the sparkles belong to the view, not to a list item */
+    catEl.querySelectorAll('.cat__spark').forEach(function(n){ n.remove(); });
+    CAT_SPARKS.forEach(function(k){
+      var el = document.createElement('div');
+      el.className = 'cat__spark';
+      el.setAttribute('aria-hidden','true');
+      /* per cent of the column, not of the viewport: the wrap is capped at
+         720px and centred, so a vw offset put the right-hand sparks outside
+         it on a wide screen and overflow:hidden simply ate them */
+      el.style.cssText = '--sx:' + k.x + '%;--sy:' + k.y + '%;--sz:' + k.s
+                       + 'px;--sd:' + k.d + 's;--sp:' + k.p + 's';
+      el.innerHTML = '<svg fill="' + (k.x > 50 ? '#FC3DE0' : '#8A4BF3') + '"><use href="#star"/></svg>';
+      catEl.querySelector('.cat__wrap').appendChild(el);
+    });
+
+    wireList();
+    return true;
+  }
+
+  function wireList(){
+    var items = [].slice.call(catList.querySelectorAll('.ev'));
+
+    function setOpen(li, on){
+      li.classList.toggle('is-open', on);
+      var btn = li.querySelector('.ev__cta');
+      btn.setAttribute('aria-expanded', on ? 'true' : 'false');
+      btn.querySelector('.ev__cta-label').textContent = on ? 'סגור' : 'להגשים את החלום!';
+    }
+
+    items.forEach(function(li){
+      li.querySelector('.ev__cta').addEventListener('click', function(){
+        var on = !li.classList.contains('is-open');
+        /* one at a time: a second open plate would push the first one off
+           screen, which is the opposite of what opening it is for */
+        items.forEach(function(o){ if(o !== li) setOpen(o, false); });
+        setOpen(li, on);
+        if(on) setTimeout(function(){
+          var r = li.getBoundingClientRect();
+          if(r.top < var_barH() || r.bottom > innerHeight)
+            li.scrollIntoView({behavior:'smooth', block:'nearest'});
+        }, 360);
+      });
+    });
+
+    /* the clips decode only while their plate is on screen, and a play()
+       refused while the tab is still hidden is retried, not left parked */
+    var liveClips = [];
+    var wake = function(){
+      liveClips.forEach(function(v){
+        v.preload = 'auto';
+        if(v.paused) v.play().catch(function(){});
+      });
+    };
+    if(!wireList._vis){
+      document.addEventListener('visibilitychange', function(){
+        if(!document.hidden) wake();
+      });
+      wireList._vis = true;
+    }
+
+    if('IntersectionObserver' in self){
+      vio = new IntersectionObserver(function(es){
+        es.forEach(function(e){
+          var v = e.target.querySelector('video');
+          if(!v) return;
+          if(e.isIntersecting){
+            if(liveClips.indexOf(v) < 0) liveClips.push(v);
+            v.preload = 'auto';
+            v.play().catch(function(){});
+          } else {
+            var i = liveClips.indexOf(v); if(i >= 0) liveClips.splice(i, 1);
+            v.pause();
+          }
+        });
+      }, {root: catEl, threshold: .2});
+      items.forEach(function(li){
+        vio.observe(li);
+        var v = li.querySelector('video');
+        if(v) v.addEventListener('canplay', wake);
+      });
+    } else {
+      items.forEach(function(li){
+        var v = li.querySelector('video');
+        if(v) v.play().catch(function(){});
+      });
+    }
+  }
+
+  function var_barH(){
+    return parseFloat(getComputedStyle(document.documentElement)
+             .getPropertyValue('--fa-bar-h')) || 64;
+  }
+
+  var homeScroll = 0;
+
+  function openCat(key){
+    if(!render(key)) return;
+    homeScroll = scrollY;
+    catEl.scrollTop = 0;
+    catEl.classList.add('is-open');
+    catEl.setAttribute('aria-hidden','false');
+    document.documentElement.classList.add('catlock');
+    document.getElementById('catBack').focus({preventScroll:true});
+  }
+
+  function closeCat(){
+    catEl.classList.remove('is-open');
+    catEl.setAttribute('aria-hidden','true');
+    document.documentElement.classList.remove('catlock');
+    scrollTo(0, homeScroll);
+    /* let the clips go once the view is out of the way */
+    setTimeout(function(){
+      if(catEl.classList.contains('is-open')) return;
+      catList.querySelectorAll('video').forEach(function(v){ v.pause(); });
+    }, 640);
+  }
+
+  var pushedCat = false;
+
+  /* ---- the cards are the way in ---- */
+  [].slice.call(document.querySelectorAll('.acard')).forEach(function(card){
+    var name = (card.querySelector('.acard__cap') || {}).textContent;
+    var key = CAT_BY_NAME[(name || '').trim()];
+    if(!key) return;
+    card.setAttribute('role','button');
+    card.setAttribute('tabindex','0');
+    card.addEventListener('click', function(){ pushedCat = true; location.hash = 'cat-' + key; });
+    card.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); pushedCat = true; location.hash = 'cat-' + key; }
+    });
+  });
+
+  /* ---- the view is addressable, so back closes it ---- */
+  function syncFromHash(){
+    var m = /^#cat-(\w+)$/.exec(location.hash);
+    if(m && CATS[m[1]]) openCat(m[1]);
+    else if(catEl.classList.contains('is-open')){ pushedCat = false; closeCat(); }
+  }
+  addEventListener('hashchange', syncFromHash);
+  /* history.back() is only right when WE put the category in the history.
+     On a link straight to #cat-shows there is nothing behind it in this
+     document, and back would walk off the page instead of closing it. */
+  document.getElementById('catBack').addEventListener('click', function(){
+    if(pushedCat){ pushedCat = false; history.back(); return; }
+    if(location.hash.indexOf('#cat-') === 0)
+      history.replaceState(null, '', location.pathname + location.search);
+    closeCat();
+  });
+  addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && catEl.classList.contains('is-open'))
+      document.getElementById('catBack').click();
+  });
+  /* a link straight to a category opens it once the hero has settled */
+  if(/^#cat-/.test(location.hash)) setTimeout(syncFromHash, 60);
+
+  document.getElementById('replay').addEventListener('click', function(){
+    reset();
+    requestAnimationFrame(function(){ setTimeout(open, slow ? 0 : HOLD); });
+  });
+})();
+</script>
+</body>
+</html>

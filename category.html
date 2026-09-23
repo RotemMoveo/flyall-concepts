@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<script>if(window.top===window.self){location.replace("./#3")}</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FlyAll — קונספט 3</title>
+<style>
+@font-face{font-family:'Almoni';src:url('assets/fonts/almoni-dl-aaa-300.ttf') format('truetype');font-weight:300;font-display:swap}
+@font-face{font-family:'Almoni';src:url('assets/fonts/almoni-dl-aaa-400.ttf') format('truetype');font-weight:400;font-display:swap}
+@font-face{font-family:'Almoni';src:url('assets/fonts/almoni-dl-aaa-700.ttf') format('truetype');font-weight:700;font-display:swap}
+@font-face{font-family:'Almoni';src:url('assets/fonts/almoni-dl-aaa-900.ttf') format('truetype');font-weight:900;font-display:swap}
+@font-face{font-family:'Bamberger';src:url('assets/fonts/bamberger-sharp-regular-fm.otf') format('opentype');font-weight:400;font-display:swap}
+@font-face{font-family:'Bamberger';src:url('assets/fonts/bamberger-sharp-bold-fm.otf') format('opentype');font-weight:700;font-display:swap}
+@font-face{font-family:'Bamberger';src:url('assets/fonts/bamberger-sharp-black-fm.otf') format('opentype');font-weight:900;font-display:swap}
+
+/* ============================================================
+   FLYALL — TOP NAVIGATION BAR
+   Reference: Hader.svg, authored at 390 x 123 (iPhone 13/14 logical width).
+   Every number below is traced from that file.
+   ============================================================ */
+
+:root {
+  --fa-font: 'Almoni', system-ui, sans-serif;
+  --fa-ink: #1B5ECE;                 /* single UI colour: logo, avatar, points, menu */
+  --fa-grad-a: #1B5ECE;
+  --fa-grad-b: #824AEA;              /* stop at 50.48% */
+  --fa-grad-c: #F63DE4;
+
+  --fa-bar-h: 64px;                  /* fixed: bar height does NOT scale */
+  --fa-bar-radius: 16px;
+  --fa-pad: 20px;                    /* physical side padding */
+
+  --fa-notch-w: 33.846%;             /* 132 / 390 — scales with viewport width */
+  --fa-notch-ratio: 132 / 42.9006;   /* 63.7988 -> 106.6994 */
+  --fa-notch-top: 63.8px;            /* meets the bar's bottom edge */
+
+  --fa-orb-size: 25.7576%;           /* 34 / 132 of the notch — scales with it.
+                                        To pin the orb at a fixed 34px instead,
+                                        set: --fa-orb-size: 34px */
+  --fa-orb-left: 36.29%;             /* 47.903 / 132 */
+  --fa-orb-top: 3.651%;              /* 1.5664 / 42.9006 */
+
+  /* type trims, measured against Hader.svg with Almoni */
+  --fa-points-nudge: -0.767px;
+  --fa-points-baseline: 13px;        /* box top -> baseline, at 16.3px/1 */
+  --fa-avatar-nudge: 0.13px;
+  --fa-z: 100;
+}
+
+/* ---- shell ------------------------------------------------ */
+.fa-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--fa-z);
+  height: var(--fa-bar-h);
+  direction: ltr;                    /* the bar is NOT mirrored in RTL */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ---- layer 0 : ambient glow + stars (behind the white bar) -- */
+.fa-header__decor {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+.fa-header__decor svg { display: block; width: 100%; height: auto; }
+
+/* ---- layer 1 : the white silhouette (bar + notch share one shadow) ---- */
+.fa-header__shape {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 1;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .25));
+  pointer-events: none;
+}
+.fa-header__bar {
+  height: var(--fa-bar-h);
+  background: #fff;
+  border-radius: 0 0 var(--fa-bar-radius) var(--fa-bar-radius);
+}
+.fa-header__notch {
+  position: absolute;
+  top: var(--fa-notch-top);
+  left: 50.128%;                     /* the traced shape sits 0.5px right of centre */
+  transform: translateX(-50%);
+  width: var(--fa-notch-w);
+  aspect-ratio: var(--fa-notch-ratio);
+}
+.fa-header__notch svg { display: block; width: 100%; height: 100%; }
+
+/* the orb needs its own stacking layer: translateX(-50%) on .fa-header__notch
+   makes it a stacking context, so a z-index on the child alone stays trapped inside */
+.fa-header__notch--orb { z-index: 3; pointer-events: none; }
+
+/* ---- layer 2 : controls ------------------------------------ */
+.fa-header__content {
+  position: relative;
+  z-index: 2;
+  height: var(--fa-bar-h);
+}
+
+.fa-header__left {
+  position: absolute;
+  left: 20.4px;
+  top: 0;
+  height: var(--fa-bar-h);
+  display: flex;
+  align-items: center;
+}
+
+/* avatar — 24px circle + 1.2px ring (outer 25.2) */
+.fa-avatar {
+  width: 25.2px;                     /* 24 + 1.2 ring, matching the SVG stroke */
+  height: 25.2px;
+  box-sizing: border-box;
+  border: 1.2px solid var(--fa-ink);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--fa-ink);
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+/* traced ink: 14.590 x 7.482, centred on the circle, baseline y 35.732 */
+.fa-avatar__txt {
+  font: 700 11.79px/1 var(--fa-font);
+  transform: translateY(var(--fa-avatar-nudge));
+}
+
+/* points — the underline means it is a link */
+.fa-points {
+  margin-left: 10.07px;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--fa-ink);
+  cursor: pointer;
+}
+.fa-points__value {
+  /* traced: ink 20.808 x 8.620 at (56.484, 27.465) · baseline y 36.085
+              underline 22.320 x 0.641 at (55.674, 38.031)
+     min-width pins the underline (and the coin icon after it) to the traced
+     box; longer balances simply grow past it. */
+  font: 700 16.3px/1 var(--fa-font);
+  display: inline-block;
+  position: relative;
+  min-width: 22.32px;
+  text-align: center;
+  transform: translateY(var(--fa-points-nudge));
+}
+/* the underline is hung off the baseline, not off the box, so a font swap
+   moves it correctly instead of silently drifting */
+.fa-points__value::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0;
+  top: calc(var(--fa-points-baseline) + 1.946px);
+  height: .641px;
+  background: currentColor;
+}
+
+.fa-points__coins {
+  margin-left: 4.63px;
+  width: 18.75px;
+  height: 13.75px;
+  display: block;
+  fill: var(--fa-ink);
+}
+
+/* logo — centred on the page, not between its neighbours */
+.fa-logo {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 18.998px;
+  width: 88.889px;
+  height: 26.009px;
+  display: block;
+}
+
+/* menu — 24 x 17.5 visual box, 20px from the right edge */
+.fa-menu {
+  position: absolute;
+  right: var(--fa-pad);
+  top: 22.498px;
+  width: 24px;
+  height: 17.5px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.fa-menu svg { display: block; width: 100%; height: 100%; }
+
+/* generous touch targets without changing the visuals */
+.fa-avatar::after, .fa-menu::after, .fa-points::after {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 44px; height: 44px;
+  transform: translate(-50%, -50%);
+}
+.fa-avatar, .fa-points { position: relative; }   /* .fa-menu is already absolute */
+
+/* ---- layer 3 : the orb (SOL) ------------------------------- */
+.fa-orb {
+  position: absolute;
+  pointer-events: auto;
+  left: var(--fa-orb-left);
+  top: var(--fa-orb-top);
+  width: var(--fa-orb-size);
+  aspect-ratio: 1;
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: #fff url("assets/orb.png") center / cover no-repeat;
+  box-shadow: 0 1px 7.6px rgba(136, 73, 234, .5),
+              inset 0 -1px 38.2px rgba(27, 94, 206, .11);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fa-orb { transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
+  .fa-orb:active { transform: scale(.92); }
+}
+
+.fa-sr {
+  position: absolute; width: 1px; height: 1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+
+/* ============================================================
+   עמוד קטגוריה — סרט כרטיסים על רקע לבן
+   ============================================================ */
+:root{
+  --cycle: #1B5ECE 0%, #824AEA 16.667%, #F63DE4 33.333%,
+           #1B5ECE 50%, #824AEA 66.667%, #F63DE4 83.333%, #1B5ECE 100%;
+  --page: #FFFFFF;
+  --paper:#FFFFFF;
+  --notch: 30px;          /* רדיוס הצביטה בין כרטיסים */
+  --perf: 18px;           /* רדיוס החריץ של קו התלישה */
+  --tk-radius: 30px;
+  --tk-w: min(80vw, 360px);   /* רוחב הסרט — משאיר שוליים נדיבים מסביב */
+}
+*{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+body{
+  margin:0; background: var(--page);
+  font-family:'Almoni', system-ui, sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+
+.cat-head{ padding: calc(var(--fa-bar-h) + 30px) clamp(20px,5vw,64px) 26px; text-align:center; }
+.cat-head h1{
+  margin:0;
+  font:300 clamp(44px,16vw,116px)/.92 'Almoni', system-ui, sans-serif;
+  letter-spacing:0; color:#000;
+}
+/* שם הקטגוריה יוצא מהמשקל הדק — בולד ובגרדיאנט המותג, כמו בהירו.
+   nowrap כי background-clip:text על מילה שנשברת בין שורות מפצל את
+   הגרדיאנט לשני קטעים שכל אחד מתחיל מחדש. */
+.cat-head h1 b{
+  font-weight:900; white-space:nowrap;
+  background-image:linear-gradient(90deg,#1B5ECE,#824AEA 50%,#F63DE4);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.cat-head p{ margin:14px 0 0; font:400 15px/1.4 'Almoni', sans-serif; color:#6B6B6B; }
+
+/* ——— הסרט ———
+   צורה אחת רציפה, עיגול רק בשני הקצוות. לסרט עצמו אין רקע: כל חלק
+   צובע את עצמו, והחיתוכים העגולים נחתכים ב-mask — כלומר הם חורים
+   אמיתיים שהרקע נראה דרכם, ולא עיגולים לבנים שמצוירים מעל.
+   לחור אין צל ואין עיגול משלו — רואים בו רק את הרקע. */
+.strip{
+  width: var(--tk-w);
+  margin: 0 auto;
+  border-radius: var(--tk-radius);
+  overflow: hidden;
+  /* צל אחד בלבד, drop-shadow, שעוקב אחרי הצורה החתוכה: בתוך החור רואים
+     בדיוק את מה שרואים מחוץ לשפת הכרטיס — הרקע, עם אותו צל עדין.
+     (box-shadow נמרח רק סביב המלבן, ולכן החור נראה לבן יותר מהסביבה
+     ובולט כעיגול.) */
+  filter: drop-shadow(0 0 1px rgba(16,16,24,.16)) drop-shadow(0 8px 26px rgba(16,16,24,.20));
+}
+.tk{ height: 86svh; display:flex; flex-direction:column; }
+
+/* חור בקצה או במרכז: שקוף בתוך המעגל, אטום מחוצה לו */
+.seam, .tk__perf{
+  background: var(--paper);
+  -webkit-mask-composite: source-in;
+          mask-composite: intersect;
+}
+
+/* הצביטה בין שני כרטיסים: חצי עיגול בכל צד ועיגול קטן במרכז */
+.seam{
+  height: calc(var(--notch) * 2); flex:0 0 auto;
+  --hole: transparent calc(var(--notch) - .5px), #000 var(--notch);
+  -webkit-mask-image:
+    radial-gradient(circle var(--notch) at 0 50%, var(--hole)),
+    radial-gradient(circle var(--notch) at 100% 50%, var(--hole)),
+    radial-gradient(circle 13px at 50% 50%, transparent 12.5px, #000 13px);
+          mask-image:
+    radial-gradient(circle var(--notch) at 0 50%, var(--hole)),
+    radial-gradient(circle var(--notch) at 100% 50%, var(--hole)),
+    radial-gradient(circle 13px at 50% 50%, transparent 12.5px, #000 13px);
+}
+
+/* ——— תוכן הכרטיס ——— */
+.tk__media{ position:relative; flex:1 1 auto; min-height:0; overflow:hidden; background:#111; }
+.tk__media video{ width:100%; height:100%; object-fit:cover; display:block; }
+.tk__year{
+  position:absolute; top:16px; left:16px;
+  font:900 13px/1 'Almoni', sans-serif; letter-spacing:.9px;
+  color:#fff; text-shadow:0 1px 6px rgba(0,0,0,.45);
+}
+.tk__cat{
+  position:absolute; top:14px; right:14px;
+  height:30px; padding:0 14px; display:flex; align-items:center;
+  background:#fff; border:2px solid #000; border-radius:999px;
+  font:900 13px/1 'Almoni', sans-serif; letter-spacing:.9px; color:#000;
+}
+
+/* הברקוד: מלבן לבן שיושב על הסרטון */
+.tk__stub{
+  position:absolute; left:16px; bottom:16px;
+  width:80px;                        /* קישוט בלבד — ברקוד לבן ישירות על הסרטון */
+  text-align:center;
+  /* צל רך בלבד, כדי שהפסים הלבנים לא ייעלמו על פריים בהיר */
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,.45));
+}
+.tk__barcode{
+  height:16px; margin-bottom:4px;
+  background-image:
+    repeating-linear-gradient(90deg, #fff 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, #fff 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(90deg, #fff 0 2px, transparent 2px 7px);
+}
+.tk__code{ font:700 7px/1 ui-monospace,'SF Mono',Menlo,monospace; letter-spacing:1.2px; color:#fff; }
+
+.tk__info{ flex:0 0 auto; background:var(--paper); padding:18px 18px 18px; text-align:center; }
+.tk__name{ margin:0; font:700 clamp(32px,8.6vw,42px)/1 'Bamberger', sans-serif; letter-spacing:0; color:#000; }
+.tk__where{ margin:6px 0 14px; font:400 16px/1.3 'Almoni', sans-serif; color:#5A5A5A; }
+.tk__cta{
+  width:100%; height:52px;
+  display:flex; align-items:center; justify-content:center; gap:9px;
+  border:0; border-radius:999px;
+  background-image: linear-gradient(90deg, var(--cycle));
+  background-size:200% 200%;
+  animation: flow 3s linear infinite;
+  font:900 clamp(15px,4.3vw,17px)/1 'Almoni', sans-serif; letter-spacing:.4px; color:#fff; cursor:pointer;
+  white-space:nowrap;
+}
+.tk__cta svg{ width:16px; height:16px; fill:none; stroke:#fff; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
+@keyframes flow{ from{ background-position:0% 50%; } to{ background-position:100% 50%; } }
+
+
+/* ============================================================
+   מצב "איך זה עובד" — הכרטיס הנבחר הופך לשחור
+   העיצוב מסביב נשאר במקומו; רק הכרטיס שנבחר מתחלף.
+   ============================================================ */
+.tk{ transition: background .45s ease; }
+.tk.is-how{ background:#0A0A0A; }
+.tk.is-how .tk__media{ display:none; }
+.tk.is-how .tk__info,
+.tk.is-how .tk__perf{ background:#0A0A0A; }
+.tk.is-how .tk__perf span{ border-top-color:rgba(255,255,255,.22); }
+.tk.is-how .tk__name{ color:#fff; }
+.tk.is-how .tk__where{ color:rgba(255,255,255,.6); }
+
+.tk__how{ display:none; }
+.tk.is-how .tk__how{
+  display:flex; flex-direction:column;
+  flex:1 1 auto; min-height:0;
+  padding:48px 20px 10px;   /* אוויר גדול יותר מעל הסטיקר */
+  text-align:center; color:#fff;
+  touch-action:pan-y;
+}
+
+/* כל השלבים באותה תא של רשת — חופפים זה על זה, והגובה נקבע לפי הגבוה
+   שבהם. כך לאזור יש גובה טבעי (ולא 0 כמו עם absolute), וזה מה שמאפשר
+   למרכז את הגוש שמתחתיו במרחב שנשאר. */
+.how__stage{ flex:0 0 auto; display:grid; }
+.hstep{
+  grid-area:1/1;
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+  gap:clamp(8px,1.6svh,16px);
+  opacity:0; transform:translateY(14px) scale(.97);
+  transition:opacity .5s ease, transform .6s cubic-bezier(.2,.8,.2,1);
+  pointer-events:none;
+}
+.hstep.is-on{ opacity:1; transform:none; pointer-events:auto; }
+.hstep img{
+  width:auto; height:clamp(78px,15svh,124px); display:block;
+  filter:drop-shadow(0 6px 18px rgba(0,0,0,.5));
+}
+.hstep h3{
+  margin:0; font:900 clamp(19px,5vw,24px)/1.1 'Almoni', sans-serif;
+  letter-spacing:0; color:#fff;
+}
+.hstep p{
+  margin:0; font:400 clamp(13px,3.6vw,15px)/1.35 'Almoni', sans-serif;
+  color:rgba(255,255,255,.72); max-width:30ch;
+}
+.hstep small{
+  display:block; margin-top:2px;
+  font:400 clamp(12px,3.2vw,13px)/1.3 'Almoni', sans-serif;
+  color:rgba(255,255,255,.5);
+}
+.hstep small b{ display:block; font-weight:900; color:#fff; margin-bottom:1px; }
+
+/* שלושה עיגולים ממוספרים — הפעיל מלא בגרדיאנט, השאר מתווים בלבד */
+/* הספרות צמודות לפסקה, ושם האירוע מקבל את כל מה שנשאר ומתמרכז בו
+   ב-margin:auto — כלומר בדיוק באמצע בין הספרות ל-CTA */
+.how__foot{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
+.how__meta{ margin:auto 0; }
+.how__meta .tk__name{ margin:0; color:#fff; }
+.how__meta .tk__where{ margin:6px 0 0; color:rgba(255,255,255,.6); }
+.tk.is-how .tk__info .tk__name,
+.tk.is-how .tk__info .tk__where{ display:none; }
+.tk.is-how .tk__how{ padding-bottom:0; }
+.tk.is-how .tk__info{ padding-top:0; }
+
+.how__dots{ flex:none; display:flex; justify-content:center; gap:10px; margin-top:16px; }
+.how__dots button{
+  width:30px; height:30px; padding:0; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:transparent; border:1.5px solid rgba(255,255,255,.28);
+  font:900 14px/1 'Almoni', sans-serif; color:rgba(255,255,255,.45);
+  cursor:pointer;
+  transition:background .35s ease, color .35s ease, border-color .35s ease, transform .35s cubic-bezier(.2,.8,.2,1);
+}
+.how__dots button.on{
+  background:linear-gradient(94deg,#1B5ECE,#824AEA 52%,#F63DE4);
+  border-color:transparent; color:#fff; transform:scale(1.1);
+}
+@media (prefers-reduced-motion: reduce){ .hstep{ transition:none; } }
+
+/* ——— קו התלישה ———
+   הגובה 120 כדי שהקו, שיושב באמצע, ינחת בדיוק במרכז הגובה שבו ישב
+   הברקוד קודם: 36 של אזור התלישה ועוד 24 עד אמצע הברקוד. */
+.tk__perf{
+  position:relative; height:120px; flex:0 0 auto;
+  --hole: transparent calc(var(--perf) - .5px), #000 var(--perf);
+  -webkit-mask-image:
+    radial-gradient(circle var(--perf) at 0 50%, var(--hole)),
+    radial-gradient(circle var(--perf) at 100% 50%, var(--hole));
+          mask-image:
+    radial-gradient(circle var(--perf) at 0 50%, var(--hole)),
+    radial-gradient(circle var(--perf) at 100% 50%, var(--hole));
+}
+.tk__perf span{ position:absolute; left:26px; right:26px; top:50%; border-top:2px dashed #D3D3D3; }
+
+/* ——— סוף הרשימה ——— */
+.tail{ width:var(--tk-w); margin:30px auto 14svh; text-align:center; }
+.tail p{ margin:0 0 14px; font:400 15px/1.4 'Almoni',sans-serif; color:#6B6B6B; }
+.tail a{
+  display:flex; align-items:center; justify-content:center; gap:9px;
+  height:56px; border-radius:999px;
+  background:#fff; border:2px solid #000;
+  font:900 18px/1 'Almoni',sans-serif; letter-spacing:.6px; color:#000; text-decoration:none;
+}
+.tail svg{ width:16px; height:16px; fill:none; stroke:#000; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
+
+@media (prefers-reduced-motion: reduce){ .tk__cta{ animation:none; } }
+@media (prefers-reduced-motion: no-preference){
+  .tk__cta, .tail a{ transition:opacity .18s ease; }
+  .tk__cta:active, .tail a:active{ opacity:.8; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============ COMPONENT: FlyAll top bar ============ -->
+<header class="fa-header">
+
+  <!-- ambient glow + stars, behind the white silhouette -->
+  <div class="fa-header__decor" aria-hidden="true">
+    <svg viewBox="4 0 390 123" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="faGrad" x1="103" y1="0" x2="301" y2="0" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#1B5ECE"/>
+          <stop offset="0.504808" stop-color="#824AEA"/>
+          <stop offset="1" stop-color="#F63DE4"/>
+        </linearGradient>
+        <filter id="faBlur0" x="174.461" y="-25.793" width="166.538" height="154.018" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="20"/></filter>
+        <filter id="faBlur1" x="126.687" y="-9.23051" width="164.195" height="151.674" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="19.4141"/></filter>
+        <filter id="faBlur2" x="119.687" y="-39.1094" width="185.072" height="169.68" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="19.4141"/></filter>
+        <filter id="faBlur3" x="64.1718" y="-16.8282" width="164.195" height="151.674" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="19.4141"/></filter>
+      </defs>
+      <g filter="url(#faBlur0)"><path d="M283.697 49.3951C283.697 70.8393 305.141 88.2237 283.697 88.2237C262.252 88.2237 214.535 85.3577 214.535 63.9134C214.535 42.4692 212.202 14.207 233.647 14.207C346.189 18.1079 283.697 27.9509 283.697 49.3951Z" fill="url(#faGrad)" fill-opacity="0.15"/></g>
+<g filter="url(#faBlur1)"><path d="M234.751 64.7857C234.751 86.2299 256.195 103.614 234.751 103.614C213.307 103.614 165.59 100.748 165.59 79.3041C165.59 57.8599 163.257 29.5977 184.701 29.5977C297.243 33.4985 234.751 43.3415 234.751 64.7857Z" fill="url(#faGrad)" fill-opacity="0.15"/></g>
+<g filter="url(#faBlur2)"><path d="M244.454 43.467C244.454 70.1279 271.072 91.7413 244.454 91.7413C217.837 91.7413 158.608 88.1781 158.608 61.5172C158.608 34.8563 155.712 -0.28125 182.33 -0.28125C322.022 4.56852 244.454 16.8061 244.454 43.467Z" fill="url(#faGrad)" fill-opacity="0.15"/></g>
+<g filter="url(#faBlur3)"><path d="M172.236 57.1881C172.236 78.6323 193.68 96.0167 172.236 96.0167C150.791 96.0167 103.075 93.1506 103.075 71.7064C103.075 50.2622 100.741 22 122.186 22C234.728 25.9008 172.236 35.7439 172.236 57.1881Z" fill="url(#faGrad)" fill-opacity="0.15"/></g>
+      <circle opacity="0.4" cx="278.542" cy="21.8783" r="1.01115" fill="white" fill-opacity="0.5"/>
+<circle opacity="0.4" cx="293.206" cy="53.226" r="1.01115" fill="white" fill-opacity="0.5"/>
+<circle opacity="0.4" cx="208.774" cy="15.8092" r="1.01115" transform="rotate(180 208.774 15.8092)" fill="white" fill-opacity="0.5"/>
+<circle opacity="0.4" cx="146.081" cy="58.7857" r="1.01115" transform="rotate(180 146.081 58.7857)" fill="white" fill-opacity="0.8"/>
+<circle opacity="0.4" cx="192.086" cy="12.7779" r="1.01115" transform="rotate(180 192.086 12.7779)" fill="white" fill-opacity="0.5"/>
+<circle opacity="0.4" cx="131.419" cy="27.4381" r="1.01115" transform="rotate(180 131.419 27.4381)" fill="white" fill-opacity="0.5"/>
+<circle opacity="0.4" cx="148.753" cy="113.997" r="1.01115" transform="rotate(-180 148.753 113.997)" fill="white" fill-opacity="0.8"/>
+<circle opacity="0.4" cx="150.823" cy="84.0514" r="1.01115" transform="rotate(-180 150.823 84.0514)" fill="white" fill-opacity="0.7"/>
+<circle opacity="0.4" cx="281.216" cy="77.0893" r="1.01115" fill="white" fill-opacity="0.8"/>
+<circle opacity="0.4" cx="235.211" cy="123.097" r="1.01115" fill="white" fill-opacity="0.7"/>
+<circle opacity="0.4" cx="295.882" cy="108.437" r="1.01115" fill="white" fill-opacity="0.5"/>
+    </svg>
+  </div>
+
+  <!-- white silhouette: bar + notch under one shadow -->
+  <div class="fa-header__shape" aria-hidden="true">
+    <div class="fa-header__bar"></div>
+    <div class="fa-header__notch">
+      <svg viewBox="129.499 63.7988 132 42.9006" xmlns="http://www.w3.org/2000/svg">
+        <path d="M129.499 63.7988C146.51 63.7988 158.112 79.122 167.491 93.3126C174.724 104.254 185.911 106.827 193.849 106.699C201.926 106.569 210.817 104.672 217.247 97.1036C229.833 82.2878 242.059 63.7988 261.499 63.7988Z" fill="#fff"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- controls -->
+  <div class="fa-header__content">
+
+    <div class="fa-header__left">
+      <button class="fa-avatar" type="button" aria-label="החשבון שלי"><span class="fa-avatar__txt">AG</span></button>
+
+      <a class="fa-points" href="#points">
+        <span class="fa-sr">יתרת הנקודות שלי:</span>
+        <span class="fa-points__value">500</span>
+        <svg class="fa-points__coins" viewBox="86.625 25.125 18.75 13.75" aria-hidden="true"
+             xmlns="http://www.w3.org/2000/svg"><path d="M100.375 28.9977V28.5625C100.375 26.6031 97.4195 25.125 93.5 25.125C89.5805 25.125 86.625 26.6031 86.625 28.5625V31.6875C86.625 33.3195 88.6758 34.6164 91.625 35.0047V35.4375C91.625 37.3969 94.5805 38.875 98.5 38.875C102.42 38.875 105.375 37.3969 105.375 35.4375V32.3125C105.375 30.6953 103.389 29.3969 100.375 28.9977ZM104.125 32.3125C104.125 33.3453 101.72 34.5 98.5 34.5C98.2086 34.5 97.9195 34.4898 97.6344 34.4711C99.3195 33.857 100.375 32.8594 100.375 31.6875V30.2609C102.709 30.6086 104.125 31.5523 104.125 32.3125ZM91.625 33.7383V31.8797C92.2467 31.9607 92.873 32.0009 93.5 32C94.127 32.0009 94.7533 31.9607 95.375 31.8797V33.7383C94.7542 33.83 94.1275 33.8757 93.5 33.875C92.8725 33.8757 92.2458 33.83 91.625 33.7383ZM99.125 30.5883V31.6875C99.125 32.343 98.1555 33.0469 96.625 33.4742V31.6484C97.6336 31.4039 98.4875 31.0398 99.125 30.5883ZM93.5 26.375C96.7195 26.375 99.125 27.5297 99.125 28.5625C99.125 29.5953 96.7195 30.75 93.5 30.75C90.2805 30.75 87.875 29.5953 87.875 28.5625C87.875 27.5297 90.2805 26.375 93.5 26.375ZM87.875 31.6875V30.5883C88.5125 31.0398 89.3664 31.4039 90.375 31.6484V33.4742C88.8445 33.0469 87.875 32.343 87.875 31.6875ZM92.875 35.4375V35.1117C93.0805 35.1195 93.2883 35.125 93.5 35.125C93.8031 35.125 94.0992 35.1148 94.3898 35.0977C94.7127 35.2132 95.0416 35.3113 95.375 35.3914V37.2242C93.8445 36.7969 92.875 36.093 92.875 35.4375ZM96.625 37.4883V35.625C97.2465 35.7085 97.8729 35.7503 98.5 35.75C99.127 35.7509 99.7533 35.7107 100.375 35.6297V37.4883C99.1316 37.6706 97.8684 37.6706 96.625 37.4883ZM101.625 37.2242V35.3984C102.634 35.1539 103.488 34.7898 104.125 34.3383V35.4375C104.125 36.093 103.155 36.7969 101.625 37.2242Z"/></svg>
+      </a>
+    </div>
+
+    <a class="fa-logo" href="#home" aria-label="FlyAll">
+      <svg viewBox="154.555 18.998 88.889 26.009" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="faLogoGrad" x1="160.842" y1="42.732" x2="176.749" y2="20.8419"
+                          gradientUnits="userSpaceOnUse">
+            <stop stop-color="#1B5ECE"/><stop offset="0.11" stop-color="#2F5AD3"/>
+            <stop offset="0.34" stop-color="#644FE0"/><stop offset="0.47" stop-color="#8749EA"/>
+            <stop offset="0.78" stop-color="#CA41E6"/><stop offset="1" stop-color="#FF3CE3"/>
+          </linearGradient>
+        </defs>
+        <path d="M166.969 32.2799H163.768L166.836 37.9317H166.201C165.851 37.9317 165.519 37.7754 165.296 37.5066L161.263 32.6417C161.073 32.413 160.791 32.2812 160.494 32.2812H159.332C158.876 32.2812 158.505 31.9117 158.505 31.4543C158.505 30.9968 158.875 30.6273 159.332 30.6273H160.494C160.791 30.6273 161.073 30.4955 161.263 30.2668L165.296 25.4019C165.519 25.1318 165.851 24.9768 166.201 24.9768H166.836L163.768 30.6286H166.969C172.951 30.6286 177.802 25.7779 177.802 19.7953C177.802 19.3547 177.446 18.998 177.005 18.998H167.013C160.132 18.998 154.555 24.5749 154.555 31.4555C154.555 38.3362 160.132 43.913 167.013 43.913H177.005C177.446 43.913 177.802 43.5564 177.802 43.1158C177.802 37.1332 172.951 32.2825 166.969 32.2825" fill="url(#faLogoGrad)"/>
+<path d="M191.09 23.4069H186.243C184.813 23.3591 183.339 23.9741 182.205 25.097C180.94 26.3478 180.264 28.0198 180.303 29.8004V38.4422C180.303 38.9991 180.757 39.4527 181.313 39.4527H183.241C183.798 39.4527 184.252 38.9991 184.252 38.4422V34.3952C184.252 34.2983 184.331 34.2182 184.429 34.2182H190.449C191.006 34.2182 191.459 33.7647 191.459 33.2078V31.5551C191.459 30.9982 191.006 30.5447 190.449 30.5447L184.252 30.5472V30.1208L184.248 30.0769C184.208 29.812 184.125 28.8856 184.736 28.087C185.638 26.9086 187.215 27.0985 187.23 27.1011L191.09 27.1037C191.585 27.1037 191.986 26.7018 191.986 26.207V24.3049C191.986 23.81 191.585 23.4082 191.09 23.4082V23.4069Z" fill="var(--fa-ink)"/>
+<path d="M197.445 23.4043H195.609C195.051 23.4043 194.598 23.8567 194.598 24.4147V38.428C194.598 38.986 195.051 39.4384 195.609 39.4384H197.445C198.003 39.4384 198.455 38.986 198.455 38.428V24.4147C198.455 23.8567 198.003 23.4043 197.445 23.4043Z" fill="var(--fa-ink)"/>
+<path d="M212.872 27.4915H210.36C209.976 27.4915 209.665 27.8042 209.665 28.1867V33.3669C209.665 34.8192 208.688 35.9137 207.393 35.9137C206.013 35.9137 205.19 34.9872 205.19 33.4354V28.1854C205.19 27.8016 204.877 27.4902 204.495 27.4902H202.075C201.691 27.4902 201.38 27.8029 201.38 28.1854V33.5504C201.38 37.3867 203.421 39.5872 206.981 39.5872C208.09 39.5872 209.011 39.2758 209.691 38.6801C209.533 40.4077 208.528 41.4234 206.936 41.4234C206.137 41.4234 205.43 41.1753 204.893 40.7075C204.656 40.5021 204.314 40.4685 204.039 40.6261L202.051 41.7619C201.858 41.873 201.725 42.063 201.686 42.2826C201.648 42.4997 201.708 42.7194 201.85 42.8874C203.033 44.2738 204.808 45.0065 206.981 45.0065C210.922 45.0065 213.568 42.2477 213.568 38.1426V28.188C213.568 27.8042 213.256 27.4928 212.873 27.4928L212.872 27.4915Z" fill="var(--fa-ink)"/>
+<path d="M226.972 25.7794C226.45 24.1216 225.048 23.0918 223.313 23.0918C221.578 23.0918 220.199 24.1216 219.677 25.7794L215.749 38.5341C215.683 38.7473 215.722 38.9722 215.854 39.1518C215.987 39.3314 216.19 39.4348 216.413 39.4348H218.996C219.305 39.4348 219.58 39.2267 219.665 38.9295L220.417 36.2897L226.232 36.2677L226.984 38.9282C227.068 39.2267 227.343 39.4348 227.653 39.4348H230.235C230.459 39.4348 230.663 39.3314 230.795 39.1518C230.928 38.9722 230.965 38.7473 230.899 38.5341L226.971 25.7794H226.972ZM225.189 32.6859H221.46L223.118 26.9385C223.188 26.6956 223.263 26.6956 223.335 26.6956C223.431 26.6956 223.484 26.6956 223.552 26.9372L225.188 32.6846L225.189 32.6859Z" fill="var(--fa-ink)"/>
+<path d="M233.876 23.4043H235.712C236.271 23.4043 236.723 23.8565 236.723 24.4147V38.428C236.723 38.9862 236.271 39.4384 235.712 39.4384H233.876C233.319 39.4384 232.866 38.9862 232.866 38.428V24.4147C232.866 23.8578 233.318 23.4043 233.876 23.4043Z" fill="var(--fa-ink)"/>
+<path d="M240.597 23.4043H242.433C242.991 23.4043 243.444 23.8565 243.444 24.4147V38.428C243.444 38.9862 242.991 39.4384 242.433 39.4384H240.597C240.04 39.4384 239.587 38.9862 239.587 38.428V24.4147C239.587 23.8578 240.039 23.4043 240.597 23.4043Z" fill="var(--fa-ink)"/>
+      </svg>
+    </a>
+
+    <button class="fa-menu" type="button" aria-label="תפריט" aria-expanded="false">
+      <svg viewBox="0 0 24 17.5" xmlns="http://www.w3.org/2000/svg"
+           stroke="var(--fa-ink)" stroke-width="1.5" stroke-linecap="round">
+        <line x1="0.75" y1="0.75" x2="23.25" y2="0.75"/>
+        <line x1="0.75" y1="8.75" x2="23.25" y2="8.75"/>
+        <line x1="0.75" y1="16.75" x2="23.25" y2="16.75"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- SOL -->
+  <div class="fa-header__notch fa-header__notch--orb">
+    <button class="fa-orb" type="button" aria-label="SOL"></button>
+  </div>
+
+</header>
+<!-- ============ /COMPONENT ============ -->
+
+<header class="cat-head">
+  <h1 id="catTitle">כל <b>ההופעות</b></h1>
+  <p>גללו כדי לגלות עוד</p>
+</header>
+
+<main class="strip" id="strip"></main>
+
+<div class="tail">
+  <p>זה הכל בקטגוריה הזאת</p>
+  <a href="3.html">חזרה לכל הקטגוריות
+    <svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg>
+  </a>
+</div>
+
+<script>
+/* ——— התוכן ———
+   שמות האירועים, הערים והקודים הם תוכן לדוגמה. הכל יושב כאן, כך
+   שהחלפה בדאטה אמיתי היא שינוי של המערך ולא של המבנה.
+   title מפוצל לשניים: החלק הדק והמילה שיוצאת בגרדיאנט. */
+const DATA = {
+  shows: { title:['כל','ההופעות'], pill:'הופעות', items:[
+    { name:'סלין דיון', where:'פריז · צרפת',    code:'FA 2027 01', video:'concert'  },
+    { name:'קולדפליי',  where:'לונדון · אנגליה', code:'FA 2027 02', video:'audience' },
+    { name:'אד שירן',   where:'ברלין · גרמניה',  code:'FA 2027 03', video:'guitar'   },
+  ]},
+  fest:  { title:['כל','הפסטיבלים'], pill:'פסטיבלים', items:[
+    { name:'טומרולנד', where:'בום · בלגיה',    code:'FA 2027 11', video:'festival'   },
+    { name:'פרימוורה', where:'ברצלונה · ספרד', code:'FA 2027 12', video:'musicfest'  },
+    { name:'סונאר',    where:'ברצלונה · ספרד', code:'FA 2027 13', video:'atmosphere' },
+  ]},
+  sport: { title:['כל אירועי','הספורט'], pill:'ספורט', items:[
+    { name:'ריאל מדריד',   where:'מדריד · ספרד',   code:'FA 2027 21', video:'football' },
+    { name:'ברצלונה',      where:'ברצלונה · ספרד', code:'FA 2027 22', video:'soccer'   },
+    { name:'ליגת האלופות', where:'מינכן · גרמניה', code:'FA 2027 23', video:'stadium'  },
+  ]},
+  ski:   { title:['כל אתרי','הסקי'], pill:'סקי', items:[
+    { name:'שאמוני',    where:'שאמוני · צרפת',   code:'FA 2027 31', video:'ski'      },
+    { name:'סנט אנטון', where:'טירול · אוסטריה', code:'FA 2027 32', video:'skilift'  },
+    { name:'זרמאט',     where:'ואלה · שווייץ',   code:'FA 2027 33', video:'skipoles' },
+  ]},
+};
+
+/* שלושת השלבים, בניסוח של הקונספט החלומי — שם הם היו אנימציות, כאן סטיקרים */
+const HOW = [
+  { st:'stars', t:'בוחרים חלום ומשריינים',
+    p:'חופשה, הופעה או משחק שתמיד רציתם! בוחרים מועד ומשריינים במקדמה',
+    nb:'20% מקדמה', n:'מהסכום הסופי, והחלום שמור לכם למועד שבחרתם' },
+  { st:'coins', t:'צוברים נקודות עד לחלום',
+    p:'משתמשים בכרטיס אשראי FlyAll וצוברים נקודות עד המועד שנקבע',
+    nb:'1 נקודה = ₪1', n:'ככל שתצברו יותר נקודות ככה תשלמו פחות בסוף' },
+  { st:'plane', t:'משלימים את היתרה ומגשימים',
+    p:'משלימים את היתרה בנקודות, בכסף או גם וגם, ויוצאים להגשים את החלום',
+    nb:'עד חודשיים לפני המועד', n:'מסיימים את התשלום ויוצאים לדרך' },
+];
+
+const cat = DATA[new URLSearchParams(location.search).get('c')] || DATA.shows;
+document.getElementById('catTitle').innerHTML = cat.title[0] + ' <b>' + cat.title[1] + '</b>';
+
+const arrow = '<svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></svg>';
+document.getElementById('strip').innerHTML = cat.items.map((e,i)=>`
+  ${ i ? '<div class="seam"></div>' : '' }
+  <article class="tk">
+    <div class="tk__media">
+      <video src="assets/reels/${e.video}.mp4" muted loop playsinline preload="metadata"></video>
+      <span class="tk__year">2027</span>
+      <span class="tk__cat">${cat.pill}</span>
+      <div class="tk__stub">
+        <div class="tk__barcode"></div>
+        <div class="tk__code">${e.code}</div>
+      </div>
+    </div>
+    <div class="tk__how">
+      <div class="how__stage">
+        ${HOW.map((h,k)=>`
+          <div class="hstep${k?'':' is-on'}">
+            <img src="assets/stickers/${h.st}.png" alt="">
+            <h3>${h.t}</h3>
+            <p>${h.p}</p>
+            <small><b>${h.nb}</b>${h.n}</small>
+          </div>`).join('')}
+      </div>
+      <div class="how__foot">
+        <div class="how__dots">${HOW.map((h,k)=>`<button type="button" class="${k?'':'on'}" aria-label="שלב ${k+1}">${k+1}</button>`).join('')}</div>
+        <div class="how__meta">
+          <h2 class="tk__name">${e.name}</h2>
+          <p class="tk__where">${e.where}</p>
+        </div>
+      </div>
+    </div>
+    <div class="tk__info">
+      <h2 class="tk__name">${e.name}</h2>
+      <p class="tk__where">${e.where}</p>
+      <button class="tk__cta" type="button">אני רוצה להגשים את החלום הזה!${arrow}</button>
+    </div>
+    <div class="tk__perf"><span></span></div>
+  </article>
+`).join('');
+
+/* ——— לחיצה על ה-CTA: הכרטיס הנבחר הופך לשחור ומציג את ההסבר ———
+   רק אחד פתוח בכל רגע, והווידאו שלו נעצר כי הוא כבר לא נראה. */
+const CTA_OPEN = 'אני רוצה להגשים את החלום הזה!';
+const CTA_BUY  = 'לרכישה';
+
+document.querySelectorAll('.tk').forEach(tk=>{
+  const cta   = tk.querySelector('.tk__cta');
+  const steps = [...tk.querySelectorAll('.hstep')];
+  const dots  = [...tk.querySelectorAll('.how__dots button')];
+  const stage = tk.querySelector('.how__stage');
+  let idx = 0;
+
+  const show = n => {
+    idx = (n + steps.length) % steps.length;
+    steps.forEach((s,k)=> s.classList.toggle('is-on', k===idx));
+    dots.forEach((d,k)=> d.classList.toggle('on', k===idx));
+  };
+  dots.forEach((d,k)=> d.addEventListener('click', ()=> show(k)));
+
+  // החלקה אופקית בין השלבים
+  let x0=null;
+  stage.addEventListener('pointerdown', e=>{ x0=e.clientX; });
+  stage.addEventListener('pointerup', e=>{
+    if(x0===null) return;
+    const dx = e.clientX - x0; x0=null;
+    if(Math.abs(dx) > 40) show(idx + (dx < 0 ? 1 : -1));   // rtl: שמאלה = הבא
+  });
+
+  cta.addEventListener('click', ()=>{
+    if(tk.classList.contains('is-how')) return;            // "לרכישה" — אין יעד עדיין
+    document.querySelectorAll('.tk.is-how').forEach(o=>{
+      o.classList.remove('is-how');
+      o.querySelector('.tk__cta').firstChild.textContent = CTA_OPEN;
+    });
+    tk.classList.add('is-how');
+    cta.firstChild.textContent = CTA_BUY;
+    show(0);
+    tk.querySelector('video').pause();
+  });
+});
+
+/* וידאו מתנגן רק כשהכרטיס שלו על המסך */
+const io = new IntersectionObserver(es=>{
+  es.forEach(e=>{
+    const v = e.target.querySelector('video');
+    if(!v) return;
+    if(e.isIntersecting){ v.preload='auto'; v.play().catch(()=>{}); } else v.pause();
+  });
+}, { threshold:.35 });
+document.querySelectorAll('.tk').forEach(t=>io.observe(t));
+</script>
+</body>
+</html>
