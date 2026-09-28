@@ -6,10 +6,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FlyAll — קונספט 3</title>
 <style>
-@font-face{font-family:'Almoni';src:url('assets/fonts/almoni-dl-aaa-300.ttf') format('truetype');font-weight:300;font-display:swap}
-@font-face{font-family:'Almoni';src:url('assets/fonts/almoni-dl-aaa-400.ttf') format('truetype');font-weight:400;font-display:swap}
-@font-face{font-family:'Almoni';src:url('assets/fonts/almoni-dl-aaa-700.ttf') format('truetype');font-weight:700;font-display:swap}
-@font-face{font-family:'Almoni';src:url('assets/fonts/almoni-dl-aaa-900.ttf') format('truetype');font-weight:900;font-display:swap}
+@font-face{font-family:'Ploni';src:url('assets/fonts/ploni-ultralight-aaa.otf') format('opentype');font-weight:200;font-display:swap}
+@font-face{font-family:'Ploni';src:url('assets/fonts/ploni-light-aaa.otf') format('opentype');font-weight:300;font-display:swap}
+@font-face{font-family:'Ploni';src:url('assets/fonts/ploni-regular-aaa.otf') format('opentype');font-weight:400;font-display:swap}
+@font-face{font-family:'Ploni';src:url('assets/fonts/ploni-medium-aaa.otf') format('opentype');font-weight:500;font-display:swap}
+@font-face{font-family:'Ploni';src:url('assets/fonts/ploni-demibold-aaa.otf') format('opentype');font-weight:600;font-display:swap}
+@font-face{font-family:'Ploni';src:url('assets/fonts/ploni-bold-aaa.otf') format('opentype');font-weight:700;font-display:swap}
+@font-face{font-family:'Ploni';src:url('assets/fonts/ploni-ultrabold-aaa.otf') format('opentype');font-weight:800;font-display:swap}
+@font-face{font-family:'Ploni';src:url('assets/fonts/ploni-black-aaa.otf') format('opentype');font-weight:900;font-display:swap}
 @font-face{font-family:'Bamberger';src:url('assets/fonts/bamberger-sharp-light-fm.otf') format('opentype');font-weight:300;font-display:swap}
 @font-face{font-family:'Bamberger';src:url('assets/fonts/bamberger-sharp-regular-fm.otf') format('opentype');font-weight:400;font-display:swap}
 @font-face{font-family:'Bamberger';src:url('assets/fonts/bamberger-sharp-medium-fm.otf') format('opentype');font-weight:500;font-display:swap}
@@ -84,7 +88,7 @@
     direction: rtl;
     text-align: center;
     color: #000;
-    font-family: 'Almoni', system-ui, sans-serif;
+    font-family: 'Ploni', system-ui, sans-serif;
     padding: 0 clamp(20px, 5vw, 64px);
   }
   .hero__title{
@@ -194,7 +198,7 @@
 
   .po-city, .po-year{
     top: 26px;
-    font: 900 15px/1 'Almoni', system-ui, sans-serif;
+    font: 900 15px/1 'Ploni', system-ui, sans-serif;
     letter-spacing: .9px; color: #fff; direction: ltr;
   }
   .po-city{ left: 22px; }
@@ -209,7 +213,7 @@
     height: 52px;
     display: flex; align-items: center; justify-content: center; gap: 10px;
     background: #fff; border: 2px solid #000; border-radius: 999px;
-    font: 900 18px/1 'Almoni', system-ui, sans-serif;
+    font: 900 18px/1 'Ploni', system-ui, sans-serif;
     letter-spacing: 1.02px; color: #000;
     white-space: nowrap; cursor: pointer;
   }
@@ -223,7 +227,7 @@
     display: flex; align-items: center;
     background: #fff; border: 3px solid #000; border-radius: 999px;
     box-shadow: 5px 5px 0 #000;
-    font: 900 17px/1 'Almoni', system-ui, sans-serif;
+    font: 900 17px/1 'Ploni', system-ui, sans-serif;
     letter-spacing: 1.02px; color: #000; white-space: nowrap;
   }
 
@@ -263,7 +267,7 @@
   .tz-pill b{
     flex: 1 1 auto;
     text-align: center;
-    font: 900 17px/1 'Almoni', system-ui, sans-serif;
+    font: 900 17px/1 'Ploni', system-ui, sans-serif;
     letter-spacing: 1.02px; color: #000; white-space: nowrap;
     transition: opacity .3s ease;
   }
@@ -327,7 +331,7 @@
   .pk-head{
     left: 22px; right: 22px; top: 48px;
     margin: 0; text-align: center;
-    font: 300 62px/1.02 'Almoni', system-ui, sans-serif;
+    font: 300 62px/1.02 'Ploni', system-ui, sans-serif;
     letter-spacing: 0; color: #000;
   }
   /* שבירת השורות קבועה, כמו בקונספט הראשון — אחרת "גם הדרך" מתפצל
@@ -360,18 +364,18 @@
     display: flex; align-items: center; justify-content: center;
     background: #fff; border: 3px solid #000; border-radius: 999px;
     box-shadow: 5px 5px 0 #000;
-    font: 900 17px/1 'Almoni', system-ui, sans-serif;
+    font: 900 17px/1 'Ploni', system-ui, sans-serif;
     letter-spacing: 1.02px; color: #000; white-space: nowrap;
   }
   .pk__sub{
     left: 22px; right: 22px; top: calc(var(--y) + var(--blob) + 16px);
     margin: 0; text-align: center;
-    font: 400 16px/1.2 'Almoni', system-ui, sans-serif; color: #5A5A5A;
+    font: 400 16px/1.2 'Ploni', system-ui, sans-serif; color: #5A5A5A;
   }
   .pk__price{
     left: 22px; right: 22px; top: calc(var(--y) + var(--blob) + 41px);
     margin: 0; text-align: center;
-    font: 400 15px/1.2 'Almoni', system-ui, sans-serif; color: #8A8A8A;
+    font: 400 15px/1.2 'Ploni', system-ui, sans-serif; color: #8A8A8A;
   }
   .pk__price b{ font-weight: 900; font-size: 17px; color: #000; }
 
@@ -406,7 +410,7 @@
   }
   .cat-item__name{
     margin: 0;
-    font: 900 clamp(24px, 6.4vw, 44px)/1 'Almoni', system-ui, sans-serif;
+    font: 900 clamp(24px, 6.4vw, 44px)/1 'Ploni', system-ui, sans-serif;
     letter-spacing: 0;
     opacity: 0; transform: translateY(18px);
     transition: opacity .6s ease .12s, transform .7s cubic-bezier(.2,.8,.2,1) .12s;
@@ -447,7 +451,7 @@
     padding: 0 0 38px;
     color: var(--ink);
     direction: rtl;
-    font-family: 'Almoni', system-ui, sans-serif;
+    font-family: 'Ploni', system-ui, sans-serif;
   }
   .foot a{ text-decoration: none; }
 
@@ -501,7 +505,7 @@
    ============================================================ */
 
 :root {
-  --fa-font: 'Almoni', system-ui, sans-serif;
+  --fa-font: 'Ploni', system-ui, sans-serif;
   --fa-ink: #1B5ECE;                 /* single UI colour: logo, avatar, points, menu */
   --fa-grad-a: #1B5ECE;
   --fa-grad-b: #824AEA;              /* stop at 50.48% */
@@ -521,7 +525,7 @@
   --fa-orb-left: 36.29%;             /* 47.903 / 132 */
   --fa-orb-top: 3.651%;              /* 1.5664 / 42.9006 */
 
-  /* type trims, measured against Hader.svg with Almoni */
+  /* type trims, measured against Hader.svg with Ploni */
   --fa-points-nudge: -0.767px;
   --fa-points-baseline: 13px;        /* box top -> baseline, at 16.3px/1 */
   --fa-avatar-nudge: 0.13px;
